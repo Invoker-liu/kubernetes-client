@@ -48,6 +48,11 @@ type PackageInformation struct {
 
 // Name strategy mapping for auto discovered classes
 type JavaNameStrategyMapping struct {
+	// Sometimes the json field name is set in this way:
+	// GoField *GoType `protobuf:"...,json=goField,proto3" json:"go_field,omitempty"`
+	// By default, we will still use the one from `json`, if this flag is true,
+	// it will then use the one from the protobuf.
+	ResolveFieldNameFromProtobufFirst bool
 	// To provide a custom generic rule that applies to all java, interface, enum
 	CustomJavaNameRule func(packageName *string, javaName *string)
 	// To manually map a golang class to a Java class
@@ -122,6 +127,14 @@ func GenerateSchemaWithAllOptions(schemaId string, crdLists map[reflect.Type]Crd
 }
 
 func (g *schemaGenerator) jsonFieldName(f reflect.StructField) string {
+	if g.javaNameStrategy.ResolveFieldNameFromProtobufFirst {
+		protobufTag := f.Tag.Get("protobuf")
+		if len(protobufTag) > 0 && strings.Contains(protobufTag, "json=") {
+			fieldName := protobufTag[strings.LastIndex(protobufTag, "json=")+5:]
+			return fieldName[:strings.Index(fieldName, ",")]
+		}
+	}
+
 	json := f.Tag.Get("json")
 	if len(json) > 0 {
 		parts := strings.Split(json, ",")
@@ -182,7 +195,7 @@ func (g *schemaGenerator) jsonDescriptor(t reflect.Type) *JSONDescriptor {
 
 	switch t.Kind() {
 	case reflect.Float32, reflect.Float64:
-		return &JSONDescriptor{Type: "float"}
+		return &JSONDescriptor{Type: "number"}
 	case reflect.Int, reflect.Uint8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint32, reflect.Uint64, reflect.Uint16:
 		return &JSONDescriptor{Type: "integer"}
 	case reflect.Bool:
@@ -316,7 +329,7 @@ func (g *schemaGenerator) generate(schemaId string, crdLists map[reflect.Type]Cr
 
 	s := JSONSchema{
 		ID:     schemaId,
-		Schema: "http://json-schema.org/draft-05/schema#",
+		Schema: "http://json-schema.org/draft-07/schema#",
 		JSONDescriptor: JSONDescriptor{
 			Type: "object",
 		},
@@ -538,10 +551,10 @@ func (g *schemaGenerator) getEnumDescriptor(t reflect.Type) EnumDescriptor {
 
 	// Note that at the moment, this only supports "string" types, for others, it must be
 	// defined in the extensions using the "enumTypes"
-	var index int64
+	var index int64 = 0
 	end := false
-	index = 0
-	for !end {
+	// We stop trying to find enum values when end is true (last index was not found) AND when at least 50 indexes have been checked.
+	for !end || index < 50 {
 		instance.SetInt(index)
 		enumJavaName := fmt.Sprintf("%v", instance.Interface())
 		if enumJavaName == strconv.FormatInt(index, 10) {
@@ -549,9 +562,7 @@ func (g *schemaGenerator) getEnumDescriptor(t reflect.Type) EnumDescriptor {
 		} else {
 			enumValues = append(enumValues, EnumValueDescriptor{
 				Name: enumJavaName,
-				// For "string" type, the Value is the same as the Name
-				// but for "integer" type, the Value would be the index, so we need both fields.
-				Value: enumJavaName,
+				Value: index,
 			})
 		}
 
@@ -559,7 +570,7 @@ func (g *schemaGenerator) getEnumDescriptor(t reflect.Type) EnumDescriptor {
 	}
 
 	return EnumDescriptor{
-		Type:   "string", // TODO: To be auto discovered.
+		Type:   "integer",
 		Values: enumValues,
 	}
 }
@@ -938,6 +949,14 @@ func (g *schemaGenerator) propertyDescriptorForList(field reflect.StructField) J
 	omitIfEmpty := g.isOmitEmpty(field)
 
 	if isSimpleJavaType(listValueType) {
+		if listValueType.Kind() == reflect.Uint8 { // Handle case for byte[]
+			return JSONPropertyDescriptor{
+				JSONDescriptor: &JSONDescriptor{
+					Type:        "string",
+					JavaOmitEmpty: omitIfEmpty,
+				},
+			}
+		}
 		return JSONPropertyDescriptor{
 			JSONDescriptor: &JSONDescriptor{
 				Type:          "array",

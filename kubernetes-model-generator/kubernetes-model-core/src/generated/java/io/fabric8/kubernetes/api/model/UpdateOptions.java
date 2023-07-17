@@ -2,9 +2,10 @@
 package io.fabric8.kubernetes.api.model;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -15,6 +16,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.model.annotation.Group;
 import io.fabric8.kubernetes.model.annotation.Version;
 import io.sundr.builder.annotations.Buildable;
+import io.sundr.transform.annotations.TemplateTransformation;
+import io.sundr.transform.annotations.TemplateTransformations;
 import lombok.EqualsAndHashCode;
 import lombok.Setter;
 import lombok.ToString;
@@ -27,7 +30,8 @@ import lombok.experimental.Accessors;
     "kind",
     "metadata",
     "dryRun",
-    "fieldManager"
+    "fieldManager",
+    "fieldValidation"
 })
 @ToString
 @EqualsAndHashCode
@@ -37,8 +41,12 @@ import lombok.experimental.Accessors;
     ""
 })
 @Buildable(editableEnabled = false, validationEnabled = false, generateBuilderPackage = true, lazyCollectionInitEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
+@TemplateTransformations({
+    @TemplateTransformation(value = "/manifest.vm", outputPath = "META-INF/services/io.fabric8.kubernetes.api.model.KubernetesResource", gather = true)
+})
 @Version("v1")
 @Group("")
+@Generated("jsonschema2pojo")
 public class UpdateOptions implements KubernetesResource
 {
 
@@ -54,6 +62,8 @@ public class UpdateOptions implements KubernetesResource
     private List<String> dryRun = new ArrayList<String>();
     @JsonProperty("fieldManager")
     private String fieldManager;
+    @JsonProperty("fieldValidation")
+    private String fieldValidation;
     /**
      * 
      * (Required)
@@ -62,7 +72,7 @@ public class UpdateOptions implements KubernetesResource
     @JsonProperty("kind")
     private String kind = "UpdateOptions";
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -71,18 +81,12 @@ public class UpdateOptions implements KubernetesResource
     public UpdateOptions() {
     }
 
-    /**
-     * 
-     * @param apiVersion
-     * @param dryRun
-     * @param kind
-     * @param fieldManager
-     */
-    public UpdateOptions(String apiVersion, List<String> dryRun, String fieldManager, String kind) {
+    public UpdateOptions(String apiVersion, List<String> dryRun, String fieldManager, String fieldValidation, String kind) {
         super();
         this.apiVersion = apiVersion;
         this.dryRun = dryRun;
         this.fieldManager = fieldManager;
+        this.fieldValidation = fieldValidation;
         this.kind = kind;
     }
 
@@ -124,6 +128,16 @@ public class UpdateOptions implements KubernetesResource
     @JsonProperty("fieldManager")
     public void setFieldManager(String fieldManager) {
         this.fieldManager = fieldManager;
+    }
+
+    @JsonProperty("fieldValidation")
+    public String getFieldValidation() {
+        return fieldValidation;
+    }
+
+    @JsonProperty("fieldValidation")
+    public void setFieldValidation(String fieldValidation) {
+        this.fieldValidation = fieldValidation;
     }
 
     /**

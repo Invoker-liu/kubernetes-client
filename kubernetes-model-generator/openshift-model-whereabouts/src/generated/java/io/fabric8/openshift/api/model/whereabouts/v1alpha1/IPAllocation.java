@@ -1,8 +1,9 @@
 
 package io.fabric8.openshift.api.model.whereabouts.v1alpha1;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -33,7 +34,8 @@ import lombok.experimental.Accessors;
     "apiVersion",
     "kind",
     "metadata",
-    "id"
+    "id",
+    "podref"
 })
 @ToString
 @EqualsAndHashCode
@@ -53,13 +55,16 @@ import lombok.experimental.Accessors;
     @BuildableReference(LocalObjectReference.class),
     @BuildableReference(PersistentVolumeClaim.class)
 })
+@Generated("jsonschema2pojo")
 public class IPAllocation implements KubernetesResource
 {
 
     @JsonProperty("id")
     private String id;
+    @JsonProperty("podref")
+    private String podref;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -68,13 +73,10 @@ public class IPAllocation implements KubernetesResource
     public IPAllocation() {
     }
 
-    /**
-     * 
-     * @param id
-     */
-    public IPAllocation(String id) {
+    public IPAllocation(String id, String podref) {
         super();
         this.id = id;
+        this.podref = podref;
     }
 
     @JsonProperty("id")
@@ -85,6 +87,16 @@ public class IPAllocation implements KubernetesResource
     @JsonProperty("id")
     public void setId(String id) {
         this.id = id;
+    }
+
+    @JsonProperty("podref")
+    public String getPodref() {
+        return podref;
+    }
+
+    @JsonProperty("podref")
+    public void setPodref(String podref) {
+        this.podref = podref;
     }
 
     @JsonAnyGetter

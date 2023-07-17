@@ -1,8 +1,11 @@
 
 package io.fabric8.openshift.api.model.operatorhub.v1alpha1;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -10,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
@@ -33,6 +37,7 @@ import lombok.experimental.Accessors;
     "apiVersion",
     "kind",
     "metadata",
+    "conditions",
     "configMapReference",
     "connectionState",
     "latestImageRegistryPoll",
@@ -58,9 +63,13 @@ import lombok.experimental.Accessors;
     @BuildableReference(LocalObjectReference.class),
     @BuildableReference(PersistentVolumeClaim.class)
 })
+@Generated("jsonschema2pojo")
 public class CatalogSourceStatus implements KubernetesResource
 {
 
+    @JsonProperty("conditions")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private List<Condition> conditions = new ArrayList<Condition>();
     @JsonProperty("configMapReference")
     private ConfigMapResourceReference configMapReference;
     @JsonProperty("connectionState")
@@ -74,7 +83,7 @@ public class CatalogSourceStatus implements KubernetesResource
     @JsonProperty("registryService")
     private RegistryServiceStatus registryService;
     @JsonIgnore
-    private Map<java.lang.String, Object> additionalProperties = new HashMap<java.lang.String, Object>();
+    private Map<java.lang.String, Object> additionalProperties = new LinkedHashMap<java.lang.String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -83,23 +92,25 @@ public class CatalogSourceStatus implements KubernetesResource
     public CatalogSourceStatus() {
     }
 
-    /**
-     * 
-     * @param configMapReference
-     * @param reason
-     * @param latestImageRegistryPoll
-     * @param connectionState
-     * @param registryService
-     * @param message
-     */
-    public CatalogSourceStatus(ConfigMapResourceReference configMapReference, GRPCConnectionState connectionState, String latestImageRegistryPoll, java.lang.String message, java.lang.String reason, RegistryServiceStatus registryService) {
+    public CatalogSourceStatus(List<Condition> conditions, ConfigMapResourceReference configMapReference, GRPCConnectionState connectionState, String latestImageRegistryPoll, java.lang.String message, java.lang.String reason, RegistryServiceStatus registryService) {
         super();
+        this.conditions = conditions;
         this.configMapReference = configMapReference;
         this.connectionState = connectionState;
         this.latestImageRegistryPoll = latestImageRegistryPoll;
         this.message = message;
         this.reason = reason;
         this.registryService = registryService;
+    }
+
+    @JsonProperty("conditions")
+    public List<Condition> getConditions() {
+        return conditions;
+    }
+
+    @JsonProperty("conditions")
+    public void setConditions(List<Condition> conditions) {
+        this.conditions = conditions;
     }
 
     @JsonProperty("configMapReference")

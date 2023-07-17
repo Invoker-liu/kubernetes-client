@@ -21,34 +21,23 @@ import io.fabric8.kubernetes.api.model.certificates.v1.CertificateSigningRequest
 import io.fabric8.kubernetes.api.model.certificates.v1.CertificateSigningRequestList;
 import io.fabric8.kubernetes.api.model.certificates.v1.CertificateSigningRequestStatus;
 import io.fabric8.kubernetes.api.model.certificates.v1.CertificateSigningRequestStatusBuilder;
-import io.fabric8.kubernetes.client.Config;
-import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.Client;
 import io.fabric8.kubernetes.client.dsl.CertificateSigningRequestResource;
-import io.fabric8.kubernetes.client.dsl.base.HasMetadataOperation;
-import io.fabric8.kubernetes.client.dsl.base.OperationContext;
-import io.fabric8.kubernetes.client.utils.URLUtils;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
+import io.fabric8.kubernetes.client.dsl.internal.HasMetadataOperation;
+import io.fabric8.kubernetes.client.dsl.internal.HasMetadataOperationsImpl;
+import io.fabric8.kubernetes.client.dsl.internal.OperationContext;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.concurrent.ExecutionException;
-
-public class CertificateSigningRequestOperationsImpl extends HasMetadataOperation<CertificateSigningRequest, CertificateSigningRequestList, CertificateSigningRequestResource<CertificateSigningRequest>> implements CertificateSigningRequestResource<CertificateSigningRequest> {
-  public CertificateSigningRequestOperationsImpl(OkHttpClient client, Config config) {
-    this(client, config, null);
+public class CertificateSigningRequestOperationsImpl extends
+    HasMetadataOperation<CertificateSigningRequest, CertificateSigningRequestList, CertificateSigningRequestResource<CertificateSigningRequest>>
+    implements CertificateSigningRequestResource<CertificateSigningRequest> {
+  public CertificateSigningRequestOperationsImpl(Client client) {
+    this(HasMetadataOperationsImpl.defaultContext(client));
   }
 
-  public CertificateSigningRequestOperationsImpl(OkHttpClient client, Config config, String namespace) {
-    this(new OperationContext().withOkhttpClient(client).withConfig(config).withNamespace(namespace).withPropagationPolicy(DEFAULT_PROPAGATION_POLICY));
-  }
-
-  public CertificateSigningRequestOperationsImpl(OperationContext context) {
+  CertificateSigningRequestOperationsImpl(OperationContext context) {
     super(context.withApiGroupName("certificates.k8s.io")
-      .withApiGroupVersion("v1")
-      .withCascading(true)
-      .withPlural("certificatesigningrequests"), CertificateSigningRequest.class, CertificateSigningRequestList.class);
+        .withApiGroupVersion("v1")
+        .withPlural("certificatesigningrequests"), CertificateSigningRequest.class, CertificateSigningRequestList.class);
   }
 
   @Override
@@ -58,33 +47,25 @@ public class CertificateSigningRequestOperationsImpl extends HasMetadataOperatio
 
   @Override
   public CertificateSigningRequest approve(CertificateSigningRequestCondition certificateSigningRequestCondition) {
-    return approveOrDeny(certificateSigningRequestCondition);
+    return addStatusToCSRAndSubmit(certificateSigningRequestCondition);
   }
 
   @Override
   public CertificateSigningRequest deny(CertificateSigningRequestCondition certificateSigningRequestCondition) {
-    return approveOrDeny(certificateSigningRequestCondition);
+    return addStatusToCSRAndSubmit(certificateSigningRequestCondition);
   }
 
-  private CertificateSigningRequest approveOrDeny(CertificateSigningRequestCondition csrCondition) {
-    try {
-      CertificateSigningRequest fromServerCsr = fromServer().get();
-      fromServerCsr.setStatus(createCertificateSigningRequestStatus(csrCondition));
-      RequestBody body = RequestBody.create(JSON, JSON_MAPPER.writeValueAsString(fromServerCsr));
-      URL url = new URL(URLUtils.join(getResourceUrl(null, fromServerCsr.getMetadata().getName(), false).toString(), "approval"));
-      Request.Builder requestBuilder = new Request.Builder().put(body).url(url);
-      return handleResponse(requestBuilder, CertificateSigningRequest.class);
-    } catch (InterruptedException ie) {
-      Thread.currentThread().interrupt();
-      throw KubernetesClientException.launderThrowable(forOperationType("CeritificateSigningRequest " + type), ie);
-    } catch (ExecutionException | IOException e) {
-      throw KubernetesClientException.launderThrowable(forOperationType("CertificateSigningRequest " + type), e);
-    }
+  private CertificateSigningRequest addStatusToCSRAndSubmit(
+      CertificateSigningRequestCondition certificateSigningRequestCondition) {
+    CertificateSigningRequest fromServerCsr = get();
+    fromServerCsr.setStatus(createCertificateSigningRequestStatus(certificateSigningRequestCondition));
+    return newInstance(context.withSubresource("approval")).update(fromServerCsr);
   }
 
-  private CertificateSigningRequestStatus createCertificateSigningRequestStatus(CertificateSigningRequestCondition certificateSigningRequestCondition) {
+  private CertificateSigningRequestStatus createCertificateSigningRequestStatus(
+      CertificateSigningRequestCondition certificateSigningRequestCondition) {
     return new CertificateSigningRequestStatusBuilder()
-      .addToConditions(certificateSigningRequestCondition)
-      .build();
+        .addToConditions(certificateSigningRequestCondition)
+        .build();
   }
 }

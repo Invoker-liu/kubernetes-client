@@ -15,11 +15,10 @@
  */
 package io.fabric8.kubernetes.examples.kubectl.equivalents;
 
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.dsl.ExecListener;
 import io.fabric8.kubernetes.client.dsl.ExecWatch;
-import okhttp3.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,15 +35,15 @@ public class PodExecEquivalent {
   private static final CountDownLatch execLatch = new CountDownLatch(1);
 
   public static void main(String[] args) {
-    try (final KubernetesClient k8s = new DefaultKubernetesClient()) {
+    try (final KubernetesClient k8s = new KubernetesClientBuilder().build()) {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       ByteArrayOutputStream error = new ByteArrayOutputStream();
 
       ExecWatch execWatch = k8s.pods().inNamespace("default").withName("my-pod")
-        .writingOutput(out)
-        .writingError(error)
-        .usingListener(new MyPodExecListener())
-        .exec("ls", "/");
+          .writingOutput(out)
+          .writingError(error)
+          .usingListener(new MyPodExecListener())
+          .exec("ls", "/");
 
       boolean latchTerminationStatus = execLatch.await(5, TimeUnit.SECONDS);
       if (!latchTerminationStatus) {
@@ -60,12 +59,12 @@ public class PodExecEquivalent {
 
   private static class MyPodExecListener implements ExecListener {
     @Override
-    public void onOpen(Response response) {
+    public void onOpen() {
       logger.info("Shell was opened");
     }
 
     @Override
-    public void onFailure(Throwable throwable, Response response) {
+    public void onFailure(Throwable t, Response failureResponse) {
       logger.info("Some error encountered");
       execLatch.countDown();
     }

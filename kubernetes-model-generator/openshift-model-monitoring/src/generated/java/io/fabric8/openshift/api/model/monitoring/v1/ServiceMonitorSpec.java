@@ -2,9 +2,10 @@
 package io.fabric8.openshift.api.model.monitoring.v1;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -36,6 +37,9 @@ import lombok.experimental.Accessors;
     "metadata",
     "endpoints",
     "jobLabel",
+    "labelLimit",
+    "labelNameLengthLimit",
+    "labelValueLengthLimit",
     "namespaceSelector",
     "podTargetLabels",
     "sampleLimit",
@@ -61,13 +65,21 @@ import lombok.experimental.Accessors;
     @BuildableReference(LocalObjectReference.class),
     @BuildableReference(PersistentVolumeClaim.class)
 })
+@Generated("jsonschema2pojo")
 public class ServiceMonitorSpec implements KubernetesResource
 {
 
     @JsonProperty("endpoints")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<Endpoint> endpoints = new ArrayList<Endpoint>();
     @JsonProperty("jobLabel")
     private String jobLabel;
+    @JsonProperty("labelLimit")
+    private Long labelLimit;
+    @JsonProperty("labelNameLengthLimit")
+    private Long labelNameLengthLimit;
+    @JsonProperty("labelValueLengthLimit")
+    private Long labelValueLengthLimit;
     @JsonProperty("namespaceSelector")
     private NamespaceSelector namespaceSelector;
     @JsonProperty("podTargetLabels")
@@ -83,7 +95,7 @@ public class ServiceMonitorSpec implements KubernetesResource
     @JsonProperty("targetLimit")
     private Long targetLimit;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -92,21 +104,13 @@ public class ServiceMonitorSpec implements KubernetesResource
     public ServiceMonitorSpec() {
     }
 
-    /**
-     * 
-     * @param jobLabel
-     * @param podTargetLabels
-     * @param sampleLimit
-     * @param endpoints
-     * @param targetLabels
-     * @param targetLimit
-     * @param namespaceSelector
-     * @param selector
-     */
-    public ServiceMonitorSpec(List<Endpoint> endpoints, String jobLabel, NamespaceSelector namespaceSelector, List<String> podTargetLabels, Long sampleLimit, io.fabric8.kubernetes.api.model.LabelSelector selector, List<String> targetLabels, Long targetLimit) {
+    public ServiceMonitorSpec(List<Endpoint> endpoints, String jobLabel, Long labelLimit, Long labelNameLengthLimit, Long labelValueLengthLimit, NamespaceSelector namespaceSelector, List<String> podTargetLabels, Long sampleLimit, io.fabric8.kubernetes.api.model.LabelSelector selector, List<String> targetLabels, Long targetLimit) {
         super();
         this.endpoints = endpoints;
         this.jobLabel = jobLabel;
+        this.labelLimit = labelLimit;
+        this.labelNameLengthLimit = labelNameLengthLimit;
+        this.labelValueLengthLimit = labelValueLengthLimit;
         this.namespaceSelector = namespaceSelector;
         this.podTargetLabels = podTargetLabels;
         this.sampleLimit = sampleLimit;
@@ -133,6 +137,36 @@ public class ServiceMonitorSpec implements KubernetesResource
     @JsonProperty("jobLabel")
     public void setJobLabel(String jobLabel) {
         this.jobLabel = jobLabel;
+    }
+
+    @JsonProperty("labelLimit")
+    public Long getLabelLimit() {
+        return labelLimit;
+    }
+
+    @JsonProperty("labelLimit")
+    public void setLabelLimit(Long labelLimit) {
+        this.labelLimit = labelLimit;
+    }
+
+    @JsonProperty("labelNameLengthLimit")
+    public Long getLabelNameLengthLimit() {
+        return labelNameLengthLimit;
+    }
+
+    @JsonProperty("labelNameLengthLimit")
+    public void setLabelNameLengthLimit(Long labelNameLengthLimit) {
+        this.labelNameLengthLimit = labelNameLengthLimit;
+    }
+
+    @JsonProperty("labelValueLengthLimit")
+    public Long getLabelValueLengthLimit() {
+        return labelValueLengthLimit;
+    }
+
+    @JsonProperty("labelValueLengthLimit")
+    public void setLabelValueLengthLimit(Long labelValueLengthLimit) {
+        this.labelValueLengthLimit = labelValueLengthLimit;
     }
 
     @JsonProperty("namespaceSelector")

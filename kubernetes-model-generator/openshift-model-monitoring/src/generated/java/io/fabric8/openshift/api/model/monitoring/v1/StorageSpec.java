@@ -1,8 +1,9 @@
 
 package io.fabric8.openshift.api.model.monitoring.v1;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -12,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
+import io.fabric8.kubernetes.api.model.EphemeralVolumeSource;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 import io.fabric8.kubernetes.api.model.LabelSelector;
@@ -36,6 +38,7 @@ import lombok.experimental.Accessors;
     "metadata",
     "disableMountSubPath",
     "emptyDir",
+    "ephemeral",
     "volumeClaimTemplate"
 })
 @ToString
@@ -56,6 +59,7 @@ import lombok.experimental.Accessors;
     @BuildableReference(LocalObjectReference.class),
     @BuildableReference(PersistentVolumeClaim.class)
 })
+@Generated("jsonschema2pojo")
 public class StorageSpec implements KubernetesResource
 {
 
@@ -63,10 +67,12 @@ public class StorageSpec implements KubernetesResource
     private Boolean disableMountSubPath;
     @JsonProperty("emptyDir")
     private EmptyDirVolumeSource emptyDir;
+    @JsonProperty("ephemeral")
+    private EphemeralVolumeSource ephemeral;
     @JsonProperty("volumeClaimTemplate")
     private EmbeddedPersistentVolumeClaim volumeClaimTemplate;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -75,16 +81,11 @@ public class StorageSpec implements KubernetesResource
     public StorageSpec() {
     }
 
-    /**
-     * 
-     * @param emptyDir
-     * @param volumeClaimTemplate
-     * @param disableMountSubPath
-     */
-    public StorageSpec(Boolean disableMountSubPath, EmptyDirVolumeSource emptyDir, EmbeddedPersistentVolumeClaim volumeClaimTemplate) {
+    public StorageSpec(Boolean disableMountSubPath, EmptyDirVolumeSource emptyDir, EphemeralVolumeSource ephemeral, EmbeddedPersistentVolumeClaim volumeClaimTemplate) {
         super();
         this.disableMountSubPath = disableMountSubPath;
         this.emptyDir = emptyDir;
+        this.ephemeral = ephemeral;
         this.volumeClaimTemplate = volumeClaimTemplate;
     }
 
@@ -106,6 +107,16 @@ public class StorageSpec implements KubernetesResource
     @JsonProperty("emptyDir")
     public void setEmptyDir(EmptyDirVolumeSource emptyDir) {
         this.emptyDir = emptyDir;
+    }
+
+    @JsonProperty("ephemeral")
+    public EphemeralVolumeSource getEphemeral() {
+        return ephemeral;
+    }
+
+    @JsonProperty("ephemeral")
+    public void setEphemeral(EphemeralVolumeSource ephemeral) {
+        this.ephemeral = ephemeral;
     }
 
     @JsonProperty("volumeClaimTemplate")

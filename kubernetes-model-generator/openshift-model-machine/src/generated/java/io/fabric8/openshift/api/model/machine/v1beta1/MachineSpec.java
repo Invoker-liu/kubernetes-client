@@ -2,9 +2,10 @@
 package io.fabric8.openshift.api.model.machine.v1beta1;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -35,6 +36,7 @@ import lombok.experimental.Accessors;
     "apiVersion",
     "kind",
     "metadata",
+    "lifecycleHooks",
     "providerID",
     "providerSpec",
     "taints"
@@ -57,9 +59,12 @@ import lombok.experimental.Accessors;
     @BuildableReference(LocalObjectReference.class),
     @BuildableReference(PersistentVolumeClaim.class)
 })
+@Generated("jsonschema2pojo")
 public class MachineSpec implements KubernetesResource
 {
 
+    @JsonProperty("lifecycleHooks")
+    private LifecycleHooks lifecycleHooks;
     @JsonProperty("metadata")
     private io.fabric8.openshift.api.model.machine.v1beta1.ObjectMeta metadata;
     @JsonProperty("providerID")
@@ -70,7 +75,7 @@ public class MachineSpec implements KubernetesResource
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<Taint> taints = new ArrayList<Taint>();
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -79,19 +84,23 @@ public class MachineSpec implements KubernetesResource
     public MachineSpec() {
     }
 
-    /**
-     * 
-     * @param metadata
-     * @param providerID
-     * @param providerSpec
-     * @param taints
-     */
-    public MachineSpec(io.fabric8.openshift.api.model.machine.v1beta1.ObjectMeta metadata, String providerID, ProviderSpec providerSpec, List<Taint> taints) {
+    public MachineSpec(LifecycleHooks lifecycleHooks, io.fabric8.openshift.api.model.machine.v1beta1.ObjectMeta metadata, String providerID, ProviderSpec providerSpec, List<Taint> taints) {
         super();
+        this.lifecycleHooks = lifecycleHooks;
         this.metadata = metadata;
         this.providerID = providerID;
         this.providerSpec = providerSpec;
         this.taints = taints;
+    }
+
+    @JsonProperty("lifecycleHooks")
+    public LifecycleHooks getLifecycleHooks() {
+        return lifecycleHooks;
+    }
+
+    @JsonProperty("lifecycleHooks")
+    public void setLifecycleHooks(LifecycleHooks lifecycleHooks) {
+        this.lifecycleHooks = lifecycleHooks;
     }
 
     @JsonProperty("metadata")

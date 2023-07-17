@@ -2,9 +2,10 @@
 package io.fabric8.openshift.api.model.operator.v1;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -38,7 +39,8 @@ import lombok.experimental.Accessors;
     "destination",
     "httpCaptureCookies",
     "httpCaptureHeaders",
-    "httpLogFormat"
+    "httpLogFormat",
+    "logEmptyRequests"
 })
 @ToString
 @EqualsAndHashCode
@@ -58,6 +60,7 @@ import lombok.experimental.Accessors;
     @BuildableReference(LocalObjectReference.class),
     @BuildableReference(PersistentVolumeClaim.class)
 })
+@Generated("jsonschema2pojo")
 public class AccessLogging implements KubernetesResource
 {
 
@@ -70,8 +73,10 @@ public class AccessLogging implements KubernetesResource
     private IngressControllerCaptureHTTPHeaders httpCaptureHeaders;
     @JsonProperty("httpLogFormat")
     private String httpLogFormat;
+    @JsonProperty("logEmptyRequests")
+    private String logEmptyRequests;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -80,19 +85,13 @@ public class AccessLogging implements KubernetesResource
     public AccessLogging() {
     }
 
-    /**
-     * 
-     * @param httpLogFormat
-     * @param httpCaptureHeaders
-     * @param destination
-     * @param httpCaptureCookies
-     */
-    public AccessLogging(LoggingDestination destination, List<IngressControllerCaptureHTTPCookie> httpCaptureCookies, IngressControllerCaptureHTTPHeaders httpCaptureHeaders, String httpLogFormat) {
+    public AccessLogging(LoggingDestination destination, List<IngressControllerCaptureHTTPCookie> httpCaptureCookies, IngressControllerCaptureHTTPHeaders httpCaptureHeaders, String httpLogFormat, String logEmptyRequests) {
         super();
         this.destination = destination;
         this.httpCaptureCookies = httpCaptureCookies;
         this.httpCaptureHeaders = httpCaptureHeaders;
         this.httpLogFormat = httpLogFormat;
+        this.logEmptyRequests = logEmptyRequests;
     }
 
     @JsonProperty("destination")
@@ -133,6 +132,16 @@ public class AccessLogging implements KubernetesResource
     @JsonProperty("httpLogFormat")
     public void setHttpLogFormat(String httpLogFormat) {
         this.httpLogFormat = httpLogFormat;
+    }
+
+    @JsonProperty("logEmptyRequests")
+    public String getLogEmptyRequests() {
+        return logEmptyRequests;
+    }
+
+    @JsonProperty("logEmptyRequests")
+    public void setLogEmptyRequests(String logEmptyRequests) {
+        this.logEmptyRequests = logEmptyRequests;
     }
 
     @JsonAnyGetter

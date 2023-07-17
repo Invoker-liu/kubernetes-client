@@ -2,9 +2,10 @@
 package io.fabric8.openshift.api.model;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -41,7 +42,8 @@ import lombok.experimental.Accessors;
     "from",
     "imageOptimizationPolicy",
     "noCache",
-    "pullSecret"
+    "pullSecret",
+    "volumes"
 })
 @ToString
 @EqualsAndHashCode
@@ -61,6 +63,7 @@ import lombok.experimental.Accessors;
     @BuildableReference(io.fabric8.kubernetes.api.model.LocalObjectReference.class),
     @BuildableReference(PersistentVolumeClaim.class)
 })
+@Generated("jsonschema2pojo")
 public class DockerBuildStrategy implements KubernetesResource
 {
 
@@ -82,8 +85,11 @@ public class DockerBuildStrategy implements KubernetesResource
     private Boolean noCache;
     @JsonProperty("pullSecret")
     private io.fabric8.kubernetes.api.model.LocalObjectReference pullSecret;
+    @JsonProperty("volumes")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private List<BuildVolume> volumes = new ArrayList<BuildVolume>();
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -92,18 +98,7 @@ public class DockerBuildStrategy implements KubernetesResource
     public DockerBuildStrategy() {
     }
 
-    /**
-     * 
-     * @param forcePull
-     * @param imageOptimizationPolicy
-     * @param dockerfilePath
-     * @param noCache
-     * @param from
-     * @param env
-     * @param buildArgs
-     * @param pullSecret
-     */
-    public DockerBuildStrategy(List<EnvVar> buildArgs, String dockerfilePath, List<EnvVar> env, Boolean forcePull, io.fabric8.kubernetes.api.model.ObjectReference from, String imageOptimizationPolicy, Boolean noCache, io.fabric8.kubernetes.api.model.LocalObjectReference pullSecret) {
+    public DockerBuildStrategy(List<EnvVar> buildArgs, String dockerfilePath, List<EnvVar> env, Boolean forcePull, io.fabric8.kubernetes.api.model.ObjectReference from, String imageOptimizationPolicy, Boolean noCache, io.fabric8.kubernetes.api.model.LocalObjectReference pullSecret, List<BuildVolume> volumes) {
         super();
         this.buildArgs = buildArgs;
         this.dockerfilePath = dockerfilePath;
@@ -113,6 +108,7 @@ public class DockerBuildStrategy implements KubernetesResource
         this.imageOptimizationPolicy = imageOptimizationPolicy;
         this.noCache = noCache;
         this.pullSecret = pullSecret;
+        this.volumes = volumes;
     }
 
     @JsonProperty("buildArgs")
@@ -193,6 +189,16 @@ public class DockerBuildStrategy implements KubernetesResource
     @JsonProperty("pullSecret")
     public void setPullSecret(io.fabric8.kubernetes.api.model.LocalObjectReference pullSecret) {
         this.pullSecret = pullSecret;
+    }
+
+    @JsonProperty("volumes")
+    public List<BuildVolume> getVolumes() {
+        return volumes;
+    }
+
+    @JsonProperty("volumes")
+    public void setVolumes(List<BuildVolume> volumes) {
+        this.volumes = volumes;
     }
 
     @JsonAnyGetter

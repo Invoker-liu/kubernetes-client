@@ -1,8 +1,9 @@
 
 package io.fabric8.openshift.api.model.monitoring.v1;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -32,6 +33,7 @@ import lombok.experimental.Accessors;
     "apiVersion",
     "kind",
     "metadata",
+    "authorization",
     "bearerTokenFile",
     "name",
     "namespace",
@@ -59,11 +61,14 @@ import lombok.experimental.Accessors;
     @BuildableReference(LocalObjectReference.class),
     @BuildableReference(PersistentVolumeClaim.class)
 })
+@Generated("jsonschema2pojo")
 public class AlertmanagerEndpoints implements KubernetesResource
 {
 
     @JsonProperty("apiVersion")
     private String apiVersion;
+    @JsonProperty("authorization")
+    private SafeAuthorization authorization;
     @JsonProperty("bearerTokenFile")
     private String bearerTokenFile;
     @JsonProperty("name")
@@ -81,7 +86,7 @@ public class AlertmanagerEndpoints implements KubernetesResource
     @JsonProperty("tlsConfig")
     private TLSConfig tlsConfig;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -90,21 +95,10 @@ public class AlertmanagerEndpoints implements KubernetesResource
     public AlertmanagerEndpoints() {
     }
 
-    /**
-     * 
-     * @param apiVersion
-     * @param scheme
-     * @param port
-     * @param name
-     * @param namespace
-     * @param bearerTokenFile
-     * @param pathPrefix
-     * @param timeout
-     * @param tlsConfig
-     */
-    public AlertmanagerEndpoints(String apiVersion, String bearerTokenFile, String name, String namespace, String pathPrefix, io.fabric8.kubernetes.api.model.IntOrString port, String scheme, String timeout, TLSConfig tlsConfig) {
+    public AlertmanagerEndpoints(String apiVersion, SafeAuthorization authorization, String bearerTokenFile, String name, String namespace, String pathPrefix, io.fabric8.kubernetes.api.model.IntOrString port, String scheme, String timeout, TLSConfig tlsConfig) {
         super();
         this.apiVersion = apiVersion;
+        this.authorization = authorization;
         this.bearerTokenFile = bearerTokenFile;
         this.name = name;
         this.namespace = namespace;
@@ -123,6 +117,16 @@ public class AlertmanagerEndpoints implements KubernetesResource
     @JsonProperty("apiVersion")
     public void setApiVersion(String apiVersion) {
         this.apiVersion = apiVersion;
+    }
+
+    @JsonProperty("authorization")
+    public SafeAuthorization getAuthorization() {
+        return authorization;
+    }
+
+    @JsonProperty("authorization")
+    public void setAuthorization(SafeAuthorization authorization) {
+        this.authorization = authorization;
     }
 
     @JsonProperty("bearerTokenFile")

@@ -16,38 +16,48 @@
 
 package io.fabric8.openshift.client.internal;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.authorization.v1.SelfSubjectAccessReview;
+import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.http.HttpClient;
+import io.fabric8.kubernetes.client.http.HttpRequest;
+import io.fabric8.kubernetes.client.http.HttpResponse;
+import io.fabric8.kubernetes.client.utils.HttpClientUtils;
+import io.fabric8.kubernetes.client.utils.OpenIDConnectionUtils;
 import io.fabric8.kubernetes.client.utils.Serialization;
+import io.fabric8.kubernetes.client.utils.TokenRefreshInterceptor;
 import io.fabric8.kubernetes.client.utils.URLUtils;
-import io.fabric8.kubernetes.client.utils.Utils;
 import io.fabric8.openshift.api.model.LocalResourceAccessReview;
 import io.fabric8.openshift.api.model.LocalSubjectAccessReview;
 import io.fabric8.openshift.api.model.ResourceAccessReview;
 import io.fabric8.openshift.api.model.SelfSubjectRulesReview;
 import io.fabric8.openshift.api.model.SubjectAccessReview;
 import io.fabric8.openshift.api.model.SubjectRulesReview;
-import io.fabric8.openshift.client.OpenShiftConfig;
-import okhttp3.Credentials;
-import okhttp3.Interceptor;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CompletableFuture;
 
-import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 
-public class OpenShiftOAuthInterceptor implements Interceptor {
+/**
+ * Controls openshift authentication. It will be based upon an oauth token that can either come from a "login" or from the
+ * config / token provider.
+ */
+public class OpenShiftOAuthInterceptor extends TokenRefreshInterceptor {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpenShiftOAuthInterceptor.class);
 
   private static final String AUTHORIZATION = "Authorization";
   private static final String LOCATION = "Location";
@@ -57,123 +67,101 @@ public class OpenShiftOAuthInterceptor implements Interceptor {
   private static final String BEFORE_TOKEN = "access_token=";
   private static final String AFTER_TOKEN = "&expires";
   private static final Set<String> RETRIABLE_RESOURCES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-    HasMetadata.getPlural(LocalSubjectAccessReview.class),
-    HasMetadata.getPlural(LocalResourceAccessReview.class),
-    HasMetadata.getPlural(ResourceAccessReview.class),
-    HasMetadata.getPlural(SelfSubjectRulesReview.class),
-    HasMetadata.getPlural(SubjectRulesReview.class),
-    HasMetadata.getPlural(SubjectAccessReview.class),
-    HasMetadata.getPlural(SelfSubjectAccessReview.class)
-    )));
+      HasMetadata.getPlural(LocalSubjectAccessReview.class),
+      HasMetadata.getPlural(LocalResourceAccessReview.class),
+      HasMetadata.getPlural(ResourceAccessReview.class),
+      HasMetadata.getPlural(SelfSubjectRulesReview.class),
+      HasMetadata.getPlural(SubjectRulesReview.class),
+      HasMetadata.getPlural(SubjectAccessReview.class),
+      HasMetadata.getPlural(SelfSubjectAccessReview.class))));
 
-  private final OkHttpClient client;
-  private final OpenShiftConfig config;
-  private final AtomicReference<String> oauthToken = new AtomicReference<>();
-
-  public OpenShiftOAuthInterceptor(OkHttpClient client, OpenShiftConfig config) {
-    this.client = client;
-    this.config = config;
+  public OpenShiftOAuthInterceptor(HttpClient client, Config config) {
+    super(config, Instant.now(),
+        newestConfig -> authorize(config, client).thenApply(token -> persistNewOAuthTokenIntoKubeConfig(config, token)));
   }
 
   @Override
-  public Response intercept(Chain chain) throws IOException {
-    Request request = chain.request();
-
-    //Build new request
-    Request.Builder builder = request.newBuilder();
-
-    String token = oauthToken.get();
-    // avoid overwriting basic auth token with stale bearer token
-    if (Utils.isNotNullOrEmpty(token) && Utils.isNullOrEmpty(request.header(AUTHORIZATION))) {
-      setAuthHeader(builder, token);
-    }
-
-    request = builder.build();
-    Response response = chain.proceed(request);
-
-    //If response is Forbidden or Unauthorized, try to obtain a token via authorize() or via config.
-    if (isResponseSuccessful(request, response)) {
-      return response;
-    } else if (Utils.isNotNullOrEmpty(config.getUsername()) && Utils.isNotNullOrEmpty(config.getPassword())) {
-      synchronized (client) {
-        // current token (if exists) is borked, don't resend
-        oauthToken.set(null);
-        token = authorize();
-        if (token != null) {
-          oauthToken.set(token);
-        }
-      }
-    } else if (Utils.isNotNullOrEmpty(config.getOauthToken())) {
-      token = config.getOauthToken();
-      oauthToken.set(token);
-    }
-
-
-    //If token was obtained, then retry request using the obtained token.
-    if (Utils.isNotNullOrEmpty(token)) {
-      // Close the previous response to prevent leaked connections.
-      response.body().close();
-
-      setAuthHeader(builder, token);
-      request = builder.build();
-      return chain.proceed(request); //repeat request with new token
-    } else {
-      return response;
-    }
+  protected boolean useBasicAuth() {
+    return false; // openshift does not support the basic auth header
   }
 
-  private void setAuthHeader(Request.Builder builder, String token) {
-    if (token != null) {
-      builder.header(AUTHORIZATION, String.format("Bearer %s", token));
-    }
+  @Override
+  protected boolean useRemoteRefresh(Config newestConfig) {
+    return isBasicAuth(); // if we have both username, and password, try to refresh
   }
 
-  private  String authorize() {
+  private static CompletableFuture<String> authorize(Config config, HttpClient client) {
+    HttpClient.DerivedClientBuilder builder = client.newBuilder();
+    builder.addOrReplaceInterceptor(TokenRefreshInterceptor.NAME, null);
+    HttpClient clone = builder.build();
+
+    URL url;
     try {
-      OkHttpClient.Builder builder = client.newBuilder();
-      builder.interceptors().remove(this);
-      OkHttpClient clone = builder.build();
-
-      URL url = new URL(URLUtils.join(config.getMasterUrl(), AUTHORIZATION_SERVER_PATH));
-      Response response = clone.newCall(new Request.Builder().get().url(url).build()).execute();
-
+      url = new URL(URLUtils.join(config.getMasterUrl(), AUTHORIZATION_SERVER_PATH));
+    } catch (MalformedURLException e) {
+      throw KubernetesClientException.launderThrowable(e);
+    }
+    CompletableFuture<HttpResponse<String>> responseFuture = clone.sendAsync(clone.newHttpRequestBuilder().url(url).build(),
+        String.class);
+    return responseFuture.thenCompose(response -> {
       if (!response.isSuccessful() || response.body() == null) {
         throw new KubernetesClientException("Unexpected response (" + response.code() + " " + response.message() + ")");
       }
 
-      String body = response.body().string();
-      JsonNode jsonResponse = Serialization.jsonMapper().readTree(body);
-      String authorizationServer = jsonResponse.get("authorization_endpoint").asText();
-      response.close();
+      String body = response.body();
+      try {
+        Map<String, Object> jsonResponse = Serialization.unmarshal(body, Map.class);
+        String authorizationServer = String.valueOf(jsonResponse.get("authorization_endpoint"));
 
-      url = new URL(authorizationServer + AUTHORIZE_QUERY);
+        URL authorizeQuery = new URL(authorizationServer + AUTHORIZE_QUERY);
+        String credential = HttpClientUtils.basicCredentials(config.getUsername(), config.getPassword());
 
-      String credential = Credentials.basic(config.getUsername(), config.getPassword());
-      response = clone.newCall(new Request.Builder().get().url(url).header(AUTHORIZATION, credential).build()).execute();
+        return clone.sendAsync(client.newHttpRequestBuilder().url(authorizeQuery).setHeader(AUTHORIZATION, credential).build(),
+            String.class);
+      } catch (Exception e) {
+        throw KubernetesClientException.launderThrowable(e);
+      }
 
-      response.close();
-      response = response.priorResponse() != null ? response.priorResponse() : response;
-      response = response.networkResponse() != null ? response.networkResponse() : response;
-      String token = response.header(LOCATION);
+    }).thenApply(response -> {
+      HttpResponse<?> responseOrPrevious = response.previousResponse().isPresent() ? response.previousResponse().get()
+          : response;
+
+      List<String> location = responseOrPrevious.headers(LOCATION);
+      String token = !location.isEmpty() ? location.get(0) : null;
       if (token == null || token.isEmpty()) {
-        throw new KubernetesClientException("Unexpected response (" + response.code() + " " + response.message() + "), to the authorization request. Missing header:[" + LOCATION + "]!");
+        throw new KubernetesClientException("Unexpected response (" + responseOrPrevious.code() + " "
+            + responseOrPrevious.message() + "), to the authorization request. Missing header:[" + LOCATION
+            + "].  More than likely the username / password are not correct.");
       }
       token = token.substring(token.indexOf(BEFORE_TOKEN) + BEFORE_TOKEN.length());
       token = token.substring(0, token.indexOf(AFTER_TOKEN));
       return token;
-    } catch (Exception e) {
-      throw KubernetesClientException.launderThrowable(e);
-    }
+    });
   }
 
-  private boolean isResponseSuccessful(Request request, Response response) {
-    String url = request.url().toString();
+  @Override
+  protected boolean shouldFail(HttpResponse<?> response) {
+    HttpRequest request = response.request();
+    String url = request.uri().toString();
     String method = request.method();
     // always retry in case of authorization endpoints; since they also return 200 when no
     // authorization header is provided
     if (method.equals("POST") && RETRIABLE_RESOURCES.stream().anyMatch(url::endsWith)) {
       return false;
     }
-    return response.code() != HTTP_UNAUTHORIZED && response.code() != HTTP_FORBIDDEN;
+    return response.code() != HTTP_UNAUTHORIZED;
   }
+
+  private static String persistNewOAuthTokenIntoKubeConfig(Config config, String token) {
+    if (token != null) {
+      try {
+        OpenIDConnectionUtils.persistKubeConfigWithUpdatedAuthInfo(config, a -> a.setToken(token));
+      } catch (IOException e) {
+        LOGGER.warn("failure while persisting new token into KUBECONFIG", e);
+      }
+    }
+
+    return token;
+  }
+
 }

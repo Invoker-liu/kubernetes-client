@@ -15,29 +15,26 @@
  */
 package io.fabric8.openshift.client.dsl.internal.build;
 
-import io.fabric8.kubernetes.api.builder.VisitableBuilder;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.fabric8.kubernetes.api.model.Event;
 import io.fabric8.kubernetes.api.model.EventList;
-import io.fabric8.kubernetes.client.Config;
-import io.fabric8.kubernetes.client.Handlers;
+import io.fabric8.kubernetes.client.Client;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.Triggerable;
 import io.fabric8.kubernetes.client.dsl.Typeable;
-import io.fabric8.kubernetes.client.dsl.base.OperationContext;
-import io.fabric8.kubernetes.client.dsl.base.OperationSupport;
+import io.fabric8.kubernetes.client.dsl.internal.HasMetadataOperation;
+import io.fabric8.kubernetes.client.dsl.internal.HasMetadataOperationsImpl;
+import io.fabric8.kubernetes.client.dsl.internal.OperationContext;
+import io.fabric8.kubernetes.client.http.HttpRequest;
 import io.fabric8.kubernetes.client.utils.KubernetesResourceUtil;
 import io.fabric8.kubernetes.client.utils.URLUtils;
 import io.fabric8.kubernetes.client.utils.Utils;
 import io.fabric8.openshift.api.model.Build;
 import io.fabric8.openshift.api.model.BuildConfig;
-import io.fabric8.openshift.api.model.BuildConfigBuilder;
 import io.fabric8.openshift.api.model.BuildConfigList;
 import io.fabric8.openshift.api.model.BuildRequest;
 import io.fabric8.openshift.api.model.WebHookTrigger;
-import io.fabric8.openshift.client.OpenShiftConfig;
-import io.fabric8.openshift.client.dsl.BuildConfigOperation;
 import io.fabric8.openshift.client.dsl.BuildConfigResource;
-import io.fabric8.openshift.client.dsl.InputStreamable;
 import io.fabric8.openshift.client.dsl.TimeoutInputStreamable;
 import io.fabric8.openshift.client.dsl.buildconfig.AsFileTimeoutInputStreamable;
 import io.fabric8.openshift.client.dsl.buildconfig.AuthorEmailable;
@@ -46,22 +43,14 @@ import io.fabric8.openshift.client.dsl.buildconfig.CommitterAuthorMessageAsFileT
 import io.fabric8.openshift.client.dsl.buildconfig.CommitterEmailable;
 import io.fabric8.openshift.client.dsl.buildconfig.MessageAsFileTimeoutInputStreamable;
 import io.fabric8.openshift.client.dsl.internal.BuildConfigOperationContext;
-import io.fabric8.openshift.client.dsl.internal.OpenShiftOperation;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okio.BufferedSink;
-import okio.Okio;
-import okio.Source;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
@@ -69,12 +58,12 @@ import java.util.concurrent.TimeUnit;
 
 import static io.fabric8.openshift.client.OpenShiftAPIGroups.BUILD;
 
-public class BuildConfigOperationsImpl extends OpenShiftOperation<BuildConfig, BuildConfigList, BuildConfigResource<BuildConfig, Void, Build>>
-        implements BuildConfigOperation {
+public class BuildConfigOperationsImpl
+    extends HasMetadataOperation<BuildConfig, BuildConfigList, BuildConfigResource<BuildConfig, Void, Build>>
+    implements BuildConfigResource<BuildConfig, Void, Build>,
+    CommitterAuthorMessageAsFileTimeoutInputStreamable<Build> {
 
   private static final Logger logger = LoggerFactory.getLogger(BuildConfigOperationsImpl.class);
-  public static final String BUILD_CONFIG_LABEL = "openshift.io/build-config.name";
-  public static final String BUILD_CONFIG_ANNOTATION = "openshift.io/build-config.name";
 
   private final BuildConfigOperationContext buildConfigOperationContext;
   private final String secret;
@@ -88,28 +77,23 @@ public class BuildConfigOperationsImpl extends OpenShiftOperation<BuildConfig, B
   private final String message;
   private final String asFile;
 
-  private final long timeout;
-  private final TimeUnit timeoutUnit;
-
-  public BuildConfigOperationsImpl(OkHttpClient client, OpenShiftConfig config) {
-    this(new BuildConfigOperationContext(), new OperationContext().withOkhttpClient(client).withConfig(config));
+  public BuildConfigOperationsImpl(Client client) {
+    this(new BuildConfigOperationContext(), HasMetadataOperationsImpl.defaultContext(client));
   }
 
   public BuildConfigOperationsImpl(BuildConfigOperationContext context, OperationContext superContext) {
     super(superContext.withApiGroupName(BUILD)
-      .withPlural("buildconfigs"), BuildConfig.class, BuildConfigList.class);
+        .withPlural("buildconfigs"), BuildConfig.class, BuildConfigList.class);
     this.buildConfigOperationContext = context;
     this.triggerType = context.getTriggerType();
     this.secret = context.getSecret();
     this.authorName = context.getAuthorName();
-    this.authorEmail = context.getAuthorEmail() ;
+    this.authorEmail = context.getAuthorEmail();
     this.committerName = context.getCommitterName();
     this.committerEmail = context.getCommitterEmail();
     this.commit = context.getCommit();
     this.message = context.getMessage();
     this.asFile = context.getAsFile();
-    this.timeout = context.getTimeout();
-    this.timeoutUnit = context.getTimeoutUnit();
   }
 
   @Override
@@ -117,7 +101,7 @@ public class BuildConfigOperationsImpl extends OpenShiftOperation<BuildConfig, B
     return new BuildConfigOperationsImpl(buildConfigOperationContext, context);
   }
 
-  public  BuildConfigOperationContext getContext() {
+  public BuildConfigOperationContext getContext() {
     return buildConfigOperationContext;
   }
 
@@ -126,8 +110,8 @@ public class BuildConfigOperationsImpl extends OpenShiftOperation<BuildConfig, B
     try {
       updateApiVersion(request);
       URL instantiationUrl = new URL(URLUtils.join(getResourceUrl().toString(), "instantiate"));
-      RequestBody requestBody = RequestBody.create(JSON, OperationSupport.JSON_MAPPER.writer().writeValueAsString(request));
-      Request.Builder requestBuilder = new Request.Builder().post(requestBody).url(instantiationUrl);
+      HttpRequest.Builder requestBuilder = this.httpClient.newHttpRequestBuilder()
+          .post(JSON, getKubernetesSerialization().asJson(request)).url(instantiationUrl);
       return handleResponse(requestBuilder, Build.class);
     } catch (Exception e) {
       throw KubernetesClientException.launderThrowable(e);
@@ -139,17 +123,15 @@ public class BuildConfigOperationsImpl extends OpenShiftOperation<BuildConfig, B
     return this;
   }
 
-
   @Override
   public Void trigger(WebHookTrigger trigger) {
     try {
       //TODO: This needs some attention.
       String triggerUrl = URLUtils.join(getResourceUrl().toString(), "webhooks", secret, triggerType);
-      RequestBody requestBody = RequestBody.create(JSON, OperationSupport.JSON_MAPPER.writer().writeValueAsBytes(trigger));
-      Request.Builder requestBuilder = new Request.Builder()
-        .post(requestBody)
-        .url(triggerUrl)
-        .addHeader("X-Github-Event", "push");
+      HttpRequest.Builder requestBuilder = this.httpClient.newHttpRequestBuilder()
+          .post(JSON, getKubernetesSerialization().asJson(trigger))
+          .uri(triggerUrl)
+          .header("X-Github-Event", "push");
       handleResponse(requestBuilder, null);
     } catch (Exception e) {
       throw KubernetesClientException.launderThrowable(e);
@@ -164,7 +146,7 @@ public class BuildConfigOperationsImpl extends OpenShiftOperation<BuildConfig, B
 
   @Override
   public Build fromInputStream(final InputStream inputStream) {
-    return fromInputStream(inputStream, -1L);
+    return submitToApiServer(inputStream, -1L);
   }
 
   @Override
@@ -176,14 +158,10 @@ public class BuildConfigOperationsImpl extends OpenShiftOperation<BuildConfig, B
       // Use a length to prevent chunked encoding with OkHttp, which in turn
       // doesn't work with 'Expect: 100-continue' negotiation with the OpenShift API server
       logger.debug("Uploading archive file \"{}\" as binary input for the build ...", file.getAbsolutePath());
-      return fromInputStream(is, file.length());
+      return submitToApiServer(is, file.length());
     } catch (IOException e) {
       throw KubernetesClientException.launderThrowable(e);
     }
-  }
-
-  private Build fromInputStream(final InputStream inputStream, final long contentLength) {
-    return submitToApiServerWithRequestBody(new ArchiveFileInputStreamRequestBody(client, config, inputStream, contentLength, name, namespace));
   }
 
   private String getQueryParameters() throws MalformedURLException {
@@ -258,12 +236,13 @@ public class BuildConfigOperationsImpl extends OpenShiftOperation<BuildConfig, B
   }
 
   @Override
-  public InputStreamable<Build> withTimeout(long timeout, TimeUnit unit) {
-    return new BuildConfigOperationsImpl(getContext().withTimeout(timeout).withTimeoutUnit(unit), context);
+  public BuildConfigOperationsImpl withTimeout(long timeout, TimeUnit unit) {
+    return new BuildConfigOperationsImpl(getContext(), context
+        .withTimeout(timeout, unit));
   }
 
   @Override
-  public InputStreamable<Build> withTimeoutInMillis(long timeoutInMillis) {
+  public BuildConfigOperationsImpl withTimeoutInMillis(long timeoutInMillis) {
     return withTimeout(timeoutInMillis, TimeUnit.MILLISECONDS);
   }
 
@@ -272,84 +251,42 @@ public class BuildConfigOperationsImpl extends OpenShiftOperation<BuildConfig, B
     return new BuildConfigOperationsImpl(getContext().withSecret(secret), context);
   }
 
-  @Override
-  protected VisitableBuilder<BuildConfig, ?> createVisitableBuilder(BuildConfig item) {
-      return new BuildConfigBuilder(item);
-  }
-
-  protected Build submitToApiServerWithRequestBody(RequestBody requestBody) {
+  protected Build submitToApiServer(InputStream inputStream, long contentLength) {
     try {
-      OkHttpClient newClient = client.newBuilder()
-        .readTimeout(timeout, timeoutUnit)
-        .writeTimeout(timeout, timeoutUnit)
-        .build();
-      Request.Builder requestBuilder =
-        new Request.Builder().post(requestBody)
-          .header("Expect", "100-continue")
-          .url(getQueryParameters());
-      return handleResponse(newClient, requestBuilder, Build.class);
+      HttpRequest.Builder requestBuilder = this.httpClient.newHttpRequestBuilder()
+          .post("application/octet-stream", inputStream, contentLength)
+          .expectContinue()
+          .timeout(getOperationContext().getTimeout(), getOperationContext().getTimeoutUnit())
+          .uri(getQueryParameters());
+      return waitForResult(handleResponse(this.httpClient, requestBuilder, new TypeReference<Build>() {
+        @Override
+        public Type getType() {
+          return Build.class;
+        }
+      }));
     } catch (Exception e) {
-      throw KubernetesClientException.launderThrowable(e);
-    }
-  }
-
-  public static class ArchiveFileInputStreamRequestBody extends RequestBody {
-    private long contentLength;
-    private InputStream inputStream;
-    private OkHttpClient okHttpClient;
-    private Config clientConfig;
-    private String name;
-    private String namespace;
-    public ArchiveFileInputStreamRequestBody(OkHttpClient client, Config config, InputStream inputStream, long contentLength, String name, String namespace) {
-      this.contentLength = contentLength;
-      this.inputStream = inputStream;
-      this.okHttpClient = client;
-      this.clientConfig = config;
-      this.name = name;
-      this.namespace = namespace;
-    }
-
-    @Override
-    public MediaType contentType() {
-      return MediaType.parse("application/octet-stream");
-    }
-
-    @Override
-    public long contentLength() throws IOException {
-      return contentLength;
-    }
-
-    @Override
-    public void writeTo(BufferedSink sink) throws IOException {
-      try {
-        writeToSink(sink);
-      } catch (IOException e) {
-        logger.error("Failed to upload archive file for the build: {}", name);
-        logger.error("Please check cluster events via `oc get events` to see what could have possibly gone wrong");
-        throw KubernetesClientException.launderThrowable("Can't instantiate binary build, due to error reading/writing stream. "
+      // TODO: better determine which exception this should occur on
+      // otherwise we need to have the httpclient api open up to the notion
+      // of a RequestBody/BodyPublisher
+      logger.error("Failed to upload archive file for the build: {}", name);
+      logger.error("Please check cluster events via `oc get events` to see what could have possibly gone wrong");
+      throw new KubernetesClientException("Can't instantiate binary build, due to error reading/writing stream. "
           + "Can be caused if the output stream was closed by the server." +
           "See if something's wrong in recent events in Cluster = " + getRecentEvents(), e);
-      }
     }
+  }
 
-    public void writeToSink(BufferedSink sink) throws IOException {
-      try (final BufferedInputStream bis = new BufferedInputStream(inputStream);
-           final Source source = Okio.source(bis)) {
-        sink.writeAll(source);
-      }
-    }
-
-    protected String getRecentEvents() {
-      StringBuilder eventsAsStrBuilder = new StringBuilder();
-      List<Event> recentEventList = Handlers.getOperation(Event.class, EventList.class, okHttpClient, clientConfig).inNamespace(namespace).list().getItems();
-      KubernetesResourceUtil.sortEventListBasedOnTimestamp(recentEventList);
-      for (int i = 0; i < 10 && i < recentEventList.size(); i++) {
-        Event event = recentEventList.get(i);
-        eventsAsStrBuilder.append(event.getReason()).append(" ")
+  protected String getRecentEvents() {
+    StringBuilder eventsAsStrBuilder = new StringBuilder();
+    List<Event> recentEventList = context.getClient().resources(Event.class, EventList.class).inNamespace(namespace).list()
+        .getItems();
+    KubernetesResourceUtil.sortEventListBasedOnTimestamp(recentEventList);
+    for (int i = 0; i < 10 && i < recentEventList.size(); i++) {
+      Event event = recentEventList.get(i);
+      eventsAsStrBuilder.append(event.getReason()).append(" ")
           .append(event.getMetadata().getName()).append(" ")
           .append(event.getMessage()).append("\n");
-      }
-      return eventsAsStrBuilder.toString();
     }
+    return eventsAsStrBuilder.toString();
   }
 }

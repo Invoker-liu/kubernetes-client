@@ -2,9 +2,10 @@
 package io.fabric8.openshift.api.model.monitoring.v1;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -34,7 +35,11 @@ import lombok.experimental.Accessors;
     "apiVersion",
     "kind",
     "metadata",
+    "attachMetadata",
     "jobLabel",
+    "labelLimit",
+    "labelNameLengthLimit",
+    "labelValueLengthLimit",
     "namespaceSelector",
     "podMetricsEndpoints",
     "podTargetLabels",
@@ -60,14 +65,24 @@ import lombok.experimental.Accessors;
     @BuildableReference(LocalObjectReference.class),
     @BuildableReference(PersistentVolumeClaim.class)
 })
+@Generated("jsonschema2pojo")
 public class PodMonitorSpec implements KubernetesResource
 {
 
+    @JsonProperty("attachMetadata")
+    private AttachMetadata attachMetadata;
     @JsonProperty("jobLabel")
     private String jobLabel;
+    @JsonProperty("labelLimit")
+    private Long labelLimit;
+    @JsonProperty("labelNameLengthLimit")
+    private Long labelNameLengthLimit;
+    @JsonProperty("labelValueLengthLimit")
+    private Long labelValueLengthLimit;
     @JsonProperty("namespaceSelector")
     private NamespaceSelector namespaceSelector;
     @JsonProperty("podMetricsEndpoints")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<PodMetricsEndpoint> podMetricsEndpoints = new ArrayList<PodMetricsEndpoint>();
     @JsonProperty("podTargetLabels")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -79,7 +94,7 @@ public class PodMonitorSpec implements KubernetesResource
     @JsonProperty("targetLimit")
     private Long targetLimit;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -88,25 +103,29 @@ public class PodMonitorSpec implements KubernetesResource
     public PodMonitorSpec() {
     }
 
-    /**
-     * 
-     * @param jobLabel
-     * @param podTargetLabels
-     * @param sampleLimit
-     * @param targetLimit
-     * @param namespaceSelector
-     * @param podMetricsEndpoints
-     * @param selector
-     */
-    public PodMonitorSpec(String jobLabel, NamespaceSelector namespaceSelector, List<PodMetricsEndpoint> podMetricsEndpoints, List<String> podTargetLabels, Long sampleLimit, io.fabric8.kubernetes.api.model.LabelSelector selector, Long targetLimit) {
+    public PodMonitorSpec(AttachMetadata attachMetadata, String jobLabel, Long labelLimit, Long labelNameLengthLimit, Long labelValueLengthLimit, NamespaceSelector namespaceSelector, List<PodMetricsEndpoint> podMetricsEndpoints, List<String> podTargetLabels, Long sampleLimit, io.fabric8.kubernetes.api.model.LabelSelector selector, Long targetLimit) {
         super();
+        this.attachMetadata = attachMetadata;
         this.jobLabel = jobLabel;
+        this.labelLimit = labelLimit;
+        this.labelNameLengthLimit = labelNameLengthLimit;
+        this.labelValueLengthLimit = labelValueLengthLimit;
         this.namespaceSelector = namespaceSelector;
         this.podMetricsEndpoints = podMetricsEndpoints;
         this.podTargetLabels = podTargetLabels;
         this.sampleLimit = sampleLimit;
         this.selector = selector;
         this.targetLimit = targetLimit;
+    }
+
+    @JsonProperty("attachMetadata")
+    public AttachMetadata getAttachMetadata() {
+        return attachMetadata;
+    }
+
+    @JsonProperty("attachMetadata")
+    public void setAttachMetadata(AttachMetadata attachMetadata) {
+        this.attachMetadata = attachMetadata;
     }
 
     @JsonProperty("jobLabel")
@@ -117,6 +136,36 @@ public class PodMonitorSpec implements KubernetesResource
     @JsonProperty("jobLabel")
     public void setJobLabel(String jobLabel) {
         this.jobLabel = jobLabel;
+    }
+
+    @JsonProperty("labelLimit")
+    public Long getLabelLimit() {
+        return labelLimit;
+    }
+
+    @JsonProperty("labelLimit")
+    public void setLabelLimit(Long labelLimit) {
+        this.labelLimit = labelLimit;
+    }
+
+    @JsonProperty("labelNameLengthLimit")
+    public Long getLabelNameLengthLimit() {
+        return labelNameLengthLimit;
+    }
+
+    @JsonProperty("labelNameLengthLimit")
+    public void setLabelNameLengthLimit(Long labelNameLengthLimit) {
+        this.labelNameLengthLimit = labelNameLengthLimit;
+    }
+
+    @JsonProperty("labelValueLengthLimit")
+    public Long getLabelValueLengthLimit() {
+        return labelValueLengthLimit;
+    }
+
+    @JsonProperty("labelValueLengthLimit")
+    public void setLabelValueLengthLimit(Long labelValueLengthLimit) {
+        this.labelValueLengthLimit = labelValueLengthLimit;
     }
 
     @JsonProperty("namespaceSelector")

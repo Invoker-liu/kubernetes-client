@@ -2,9 +2,10 @@
 package io.fabric8.openshift.api.model.operator.v1;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -35,8 +36,13 @@ import lombok.experimental.Accessors;
     "apiVersion",
     "kind",
     "metadata",
+    "cache",
+    "logLevel",
+    "managementState",
     "nodePlacement",
-    "servers"
+    "operatorLogLevel",
+    "servers",
+    "upstreamResolvers"
 })
 @ToString
 @EqualsAndHashCode
@@ -56,16 +62,27 @@ import lombok.experimental.Accessors;
     @BuildableReference(LocalObjectReference.class),
     @BuildableReference(PersistentVolumeClaim.class)
 })
+@Generated("jsonschema2pojo")
 public class DNSSpec implements KubernetesResource
 {
 
+    @JsonProperty("cache")
+    private DNSCache cache;
+    @JsonProperty("logLevel")
+    private String logLevel;
+    @JsonProperty("managementState")
+    private String managementState;
     @JsonProperty("nodePlacement")
     private DNSNodePlacement nodePlacement;
+    @JsonProperty("operatorLogLevel")
+    private String operatorLogLevel;
     @JsonProperty("servers")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<Server> servers = new ArrayList<Server>();
+    @JsonProperty("upstreamResolvers")
+    private UpstreamResolvers upstreamResolvers;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -74,15 +91,45 @@ public class DNSSpec implements KubernetesResource
     public DNSSpec() {
     }
 
-    /**
-     * 
-     * @param nodePlacement
-     * @param servers
-     */
-    public DNSSpec(DNSNodePlacement nodePlacement, List<Server> servers) {
+    public DNSSpec(DNSCache cache, String logLevel, String managementState, DNSNodePlacement nodePlacement, String operatorLogLevel, List<Server> servers, UpstreamResolvers upstreamResolvers) {
         super();
+        this.cache = cache;
+        this.logLevel = logLevel;
+        this.managementState = managementState;
         this.nodePlacement = nodePlacement;
+        this.operatorLogLevel = operatorLogLevel;
         this.servers = servers;
+        this.upstreamResolvers = upstreamResolvers;
+    }
+
+    @JsonProperty("cache")
+    public DNSCache getCache() {
+        return cache;
+    }
+
+    @JsonProperty("cache")
+    public void setCache(DNSCache cache) {
+        this.cache = cache;
+    }
+
+    @JsonProperty("logLevel")
+    public String getLogLevel() {
+        return logLevel;
+    }
+
+    @JsonProperty("logLevel")
+    public void setLogLevel(String logLevel) {
+        this.logLevel = logLevel;
+    }
+
+    @JsonProperty("managementState")
+    public String getManagementState() {
+        return managementState;
+    }
+
+    @JsonProperty("managementState")
+    public void setManagementState(String managementState) {
+        this.managementState = managementState;
     }
 
     @JsonProperty("nodePlacement")
@@ -95,6 +142,16 @@ public class DNSSpec implements KubernetesResource
         this.nodePlacement = nodePlacement;
     }
 
+    @JsonProperty("operatorLogLevel")
+    public String getOperatorLogLevel() {
+        return operatorLogLevel;
+    }
+
+    @JsonProperty("operatorLogLevel")
+    public void setOperatorLogLevel(String operatorLogLevel) {
+        this.operatorLogLevel = operatorLogLevel;
+    }
+
     @JsonProperty("servers")
     public List<Server> getServers() {
         return servers;
@@ -103,6 +160,16 @@ public class DNSSpec implements KubernetesResource
     @JsonProperty("servers")
     public void setServers(List<Server> servers) {
         this.servers = servers;
+    }
+
+    @JsonProperty("upstreamResolvers")
+    public UpstreamResolvers getUpstreamResolvers() {
+        return upstreamResolvers;
+    }
+
+    @JsonProperty("upstreamResolvers")
+    public void setUpstreamResolvers(UpstreamResolvers upstreamResolvers) {
+        this.upstreamResolvers = upstreamResolvers;
     }
 
     @JsonAnyGetter

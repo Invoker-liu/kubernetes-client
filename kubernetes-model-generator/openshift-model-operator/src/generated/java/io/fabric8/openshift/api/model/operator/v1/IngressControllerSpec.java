@@ -1,8 +1,9 @@
 
 package io.fabric8.openshift.api.model.operator.v1;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -11,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.Container;
-import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
@@ -19,8 +20,9 @@ import io.fabric8.kubernetes.api.model.ObjectReference;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.PodTemplateSpec;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
-import io.fabric8.openshift.api.model.ConfigMapNameReference;
-import io.fabric8.openshift.api.model.TLSSecurityProfile;
+import io.fabric8.kubernetes.api.model.runtime.RawExtension;
+import io.fabric8.openshift.api.model.config.v1.ConfigMapNameReference;
+import io.fabric8.openshift.api.model.config.v1.TLSSecurityProfile;
 import io.sundr.builder.annotations.Buildable;
 import io.sundr.builder.annotations.BuildableReference;
 import lombok.EqualsAndHashCode;
@@ -34,9 +36,12 @@ import lombok.experimental.Accessors;
     "apiVersion",
     "kind",
     "metadata",
+    "clientTLS",
     "defaultCertificate",
     "domain",
     "endpointPublishingStrategy",
+    "httpCompression",
+    "httpEmptyRequestsPolicy",
     "httpErrorCodePages",
     "httpHeaders",
     "logging",
@@ -65,17 +70,26 @@ import lombok.experimental.Accessors;
     @BuildableReference(IntOrString.class),
     @BuildableReference(ObjectReference.class),
     @BuildableReference(io.fabric8.kubernetes.api.model.LocalObjectReference.class),
-    @BuildableReference(PersistentVolumeClaim.class)
+    @BuildableReference(PersistentVolumeClaim.class),
+    @BuildableReference(GenericKubernetesResource.class),
+    @BuildableReference(RawExtension.class)
 })
+@Generated("jsonschema2pojo")
 public class IngressControllerSpec implements KubernetesResource
 {
 
+    @JsonProperty("clientTLS")
+    private ClientTLS clientTLS;
     @JsonProperty("defaultCertificate")
     private io.fabric8.kubernetes.api.model.LocalObjectReference defaultCertificate;
     @JsonProperty("domain")
     private String domain;
     @JsonProperty("endpointPublishingStrategy")
     private EndpointPublishingStrategy endpointPublishingStrategy;
+    @JsonProperty("httpCompression")
+    private HTTPCompressionPolicy httpCompression;
+    @JsonProperty("httpEmptyRequestsPolicy")
+    private String httpEmptyRequestsPolicy;
     @JsonProperty("httpErrorCodePages")
     private ConfigMapNameReference httpErrorCodePages;
     @JsonProperty("httpHeaders")
@@ -97,9 +111,9 @@ public class IngressControllerSpec implements KubernetesResource
     @JsonProperty("tuningOptions")
     private IngressControllerTuningOptions tuningOptions;
     @JsonProperty("unsupportedConfigOverrides")
-    private HasMetadata unsupportedConfigOverrides;
+    private KubernetesResource unsupportedConfigOverrides;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -108,28 +122,14 @@ public class IngressControllerSpec implements KubernetesResource
     public IngressControllerSpec() {
     }
 
-    /**
-     * 
-     * @param httpErrorCodePages
-     * @param routeSelector
-     * @param replicas
-     * @param endpointPublishingStrategy
-     * @param namespaceSelector
-     * @param httpHeaders
-     * @param nodePlacement
-     * @param routeAdmission
-     * @param domain
-     * @param tlsSecurityProfile
-     * @param defaultCertificate
-     * @param unsupportedConfigOverrides
-     * @param logging
-     * @param tuningOptions
-     */
-    public IngressControllerSpec(io.fabric8.kubernetes.api.model.LocalObjectReference defaultCertificate, String domain, EndpointPublishingStrategy endpointPublishingStrategy, ConfigMapNameReference httpErrorCodePages, IngressControllerHTTPHeaders httpHeaders, IngressControllerLogging logging, io.fabric8.kubernetes.api.model.LabelSelector namespaceSelector, NodePlacement nodePlacement, Integer replicas, RouteAdmissionPolicy routeAdmission, io.fabric8.kubernetes.api.model.LabelSelector routeSelector, TLSSecurityProfile tlsSecurityProfile, IngressControllerTuningOptions tuningOptions, HasMetadata unsupportedConfigOverrides) {
+    public IngressControllerSpec(ClientTLS clientTLS, io.fabric8.kubernetes.api.model.LocalObjectReference defaultCertificate, String domain, EndpointPublishingStrategy endpointPublishingStrategy, HTTPCompressionPolicy httpCompression, String httpEmptyRequestsPolicy, ConfigMapNameReference httpErrorCodePages, IngressControllerHTTPHeaders httpHeaders, IngressControllerLogging logging, io.fabric8.kubernetes.api.model.LabelSelector namespaceSelector, NodePlacement nodePlacement, Integer replicas, RouteAdmissionPolicy routeAdmission, io.fabric8.kubernetes.api.model.LabelSelector routeSelector, TLSSecurityProfile tlsSecurityProfile, IngressControllerTuningOptions tuningOptions, KubernetesResource unsupportedConfigOverrides) {
         super();
+        this.clientTLS = clientTLS;
         this.defaultCertificate = defaultCertificate;
         this.domain = domain;
         this.endpointPublishingStrategy = endpointPublishingStrategy;
+        this.httpCompression = httpCompression;
+        this.httpEmptyRequestsPolicy = httpEmptyRequestsPolicy;
         this.httpErrorCodePages = httpErrorCodePages;
         this.httpHeaders = httpHeaders;
         this.logging = logging;
@@ -141,6 +141,16 @@ public class IngressControllerSpec implements KubernetesResource
         this.tlsSecurityProfile = tlsSecurityProfile;
         this.tuningOptions = tuningOptions;
         this.unsupportedConfigOverrides = unsupportedConfigOverrides;
+    }
+
+    @JsonProperty("clientTLS")
+    public ClientTLS getClientTLS() {
+        return clientTLS;
+    }
+
+    @JsonProperty("clientTLS")
+    public void setClientTLS(ClientTLS clientTLS) {
+        this.clientTLS = clientTLS;
     }
 
     @JsonProperty("defaultCertificate")
@@ -171,6 +181,26 @@ public class IngressControllerSpec implements KubernetesResource
     @JsonProperty("endpointPublishingStrategy")
     public void setEndpointPublishingStrategy(EndpointPublishingStrategy endpointPublishingStrategy) {
         this.endpointPublishingStrategy = endpointPublishingStrategy;
+    }
+
+    @JsonProperty("httpCompression")
+    public HTTPCompressionPolicy getHttpCompression() {
+        return httpCompression;
+    }
+
+    @JsonProperty("httpCompression")
+    public void setHttpCompression(HTTPCompressionPolicy httpCompression) {
+        this.httpCompression = httpCompression;
+    }
+
+    @JsonProperty("httpEmptyRequestsPolicy")
+    public String getHttpEmptyRequestsPolicy() {
+        return httpEmptyRequestsPolicy;
+    }
+
+    @JsonProperty("httpEmptyRequestsPolicy")
+    public void setHttpEmptyRequestsPolicy(String httpEmptyRequestsPolicy) {
+        this.httpEmptyRequestsPolicy = httpEmptyRequestsPolicy;
     }
 
     @JsonProperty("httpErrorCodePages")
@@ -274,12 +304,12 @@ public class IngressControllerSpec implements KubernetesResource
     }
 
     @JsonProperty("unsupportedConfigOverrides")
-    public HasMetadata getUnsupportedConfigOverrides() {
+    public KubernetesResource getUnsupportedConfigOverrides() {
         return unsupportedConfigOverrides;
     }
 
     @JsonProperty("unsupportedConfigOverrides")
-    public void setUnsupportedConfigOverrides(HasMetadata unsupportedConfigOverrides) {
+    public void setUnsupportedConfigOverrides(KubernetesResource unsupportedConfigOverrides) {
         this.unsupportedConfigOverrides = unsupportedConfigOverrides;
     }
 

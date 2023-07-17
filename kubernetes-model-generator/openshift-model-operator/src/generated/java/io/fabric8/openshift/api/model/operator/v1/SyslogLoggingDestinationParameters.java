@@ -1,8 +1,9 @@
 
 package io.fabric8.openshift.api.model.operator.v1;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -35,6 +36,7 @@ import lombok.experimental.Accessors;
     "metadata",
     "address",
     "facility",
+    "maxLength",
     "port"
 })
 @ToString
@@ -55,6 +57,7 @@ import lombok.experimental.Accessors;
     @BuildableReference(LocalObjectReference.class),
     @BuildableReference(PersistentVolumeClaim.class)
 })
+@Generated("jsonschema2pojo")
 public class SyslogLoggingDestinationParameters implements KubernetesResource
 {
 
@@ -62,10 +65,12 @@ public class SyslogLoggingDestinationParameters implements KubernetesResource
     private String address;
     @JsonProperty("facility")
     private String facility;
+    @JsonProperty("maxLength")
+    private Integer maxLength;
     @JsonProperty("port")
     private Integer port;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -74,16 +79,11 @@ public class SyslogLoggingDestinationParameters implements KubernetesResource
     public SyslogLoggingDestinationParameters() {
     }
 
-    /**
-     * 
-     * @param address
-     * @param port
-     * @param facility
-     */
-    public SyslogLoggingDestinationParameters(String address, String facility, Integer port) {
+    public SyslogLoggingDestinationParameters(String address, String facility, Integer maxLength, Integer port) {
         super();
         this.address = address;
         this.facility = facility;
+        this.maxLength = maxLength;
         this.port = port;
     }
 
@@ -105,6 +105,16 @@ public class SyslogLoggingDestinationParameters implements KubernetesResource
     @JsonProperty("facility")
     public void setFacility(String facility) {
         this.facility = facility;
+    }
+
+    @JsonProperty("maxLength")
+    public Integer getMaxLength() {
+        return maxLength;
+    }
+
+    @JsonProperty("maxLength")
+    public void setMaxLength(Integer maxLength) {
+        this.maxLength = maxLength;
     }
 
     @JsonProperty("port")

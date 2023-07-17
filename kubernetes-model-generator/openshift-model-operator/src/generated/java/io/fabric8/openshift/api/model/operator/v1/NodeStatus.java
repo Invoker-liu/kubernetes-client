@@ -2,9 +2,10 @@
 package io.fabric8.openshift.api.model.operator.v1;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -37,9 +38,11 @@ import lombok.experimental.Accessors;
     "metadata",
     "currentRevision",
     "lastFailedCount",
+    "lastFailedReason",
     "lastFailedRevision",
     "lastFailedRevisionErrors",
     "lastFailedTime",
+    "lastFallbackCount",
     "nodeName",
     "targetRevision"
 })
@@ -61,6 +64,7 @@ import lombok.experimental.Accessors;
     @BuildableReference(LocalObjectReference.class),
     @BuildableReference(PersistentVolumeClaim.class)
 })
+@Generated("jsonschema2pojo")
 public class NodeStatus implements KubernetesResource
 {
 
@@ -68,6 +72,8 @@ public class NodeStatus implements KubernetesResource
     private Integer currentRevision;
     @JsonProperty("lastFailedCount")
     private Integer lastFailedCount;
+    @JsonProperty("lastFailedReason")
+    private java.lang.String lastFailedReason;
     @JsonProperty("lastFailedRevision")
     private Integer lastFailedRevision;
     @JsonProperty("lastFailedRevisionErrors")
@@ -75,12 +81,14 @@ public class NodeStatus implements KubernetesResource
     private List<java.lang.String> lastFailedRevisionErrors = new ArrayList<java.lang.String>();
     @JsonProperty("lastFailedTime")
     private String lastFailedTime;
+    @JsonProperty("lastFallbackCount")
+    private Integer lastFallbackCount;
     @JsonProperty("nodeName")
     private java.lang.String nodeName;
     @JsonProperty("targetRevision")
     private Integer targetRevision;
     @JsonIgnore
-    private Map<java.lang.String, Object> additionalProperties = new HashMap<java.lang.String, Object>();
+    private Map<java.lang.String, Object> additionalProperties = new LinkedHashMap<java.lang.String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -89,23 +97,15 @@ public class NodeStatus implements KubernetesResource
     public NodeStatus() {
     }
 
-    /**
-     * 
-     * @param nodeName
-     * @param currentRevision
-     * @param lastFailedRevisionErrors
-     * @param targetRevision
-     * @param lastFailedTime
-     * @param lastFailedCount
-     * @param lastFailedRevision
-     */
-    public NodeStatus(Integer currentRevision, Integer lastFailedCount, Integer lastFailedRevision, List<java.lang.String> lastFailedRevisionErrors, String lastFailedTime, java.lang.String nodeName, Integer targetRevision) {
+    public NodeStatus(Integer currentRevision, Integer lastFailedCount, java.lang.String lastFailedReason, Integer lastFailedRevision, List<java.lang.String> lastFailedRevisionErrors, String lastFailedTime, Integer lastFallbackCount, java.lang.String nodeName, Integer targetRevision) {
         super();
         this.currentRevision = currentRevision;
         this.lastFailedCount = lastFailedCount;
+        this.lastFailedReason = lastFailedReason;
         this.lastFailedRevision = lastFailedRevision;
         this.lastFailedRevisionErrors = lastFailedRevisionErrors;
         this.lastFailedTime = lastFailedTime;
+        this.lastFallbackCount = lastFallbackCount;
         this.nodeName = nodeName;
         this.targetRevision = targetRevision;
     }
@@ -128,6 +128,16 @@ public class NodeStatus implements KubernetesResource
     @JsonProperty("lastFailedCount")
     public void setLastFailedCount(Integer lastFailedCount) {
         this.lastFailedCount = lastFailedCount;
+    }
+
+    @JsonProperty("lastFailedReason")
+    public java.lang.String getLastFailedReason() {
+        return lastFailedReason;
+    }
+
+    @JsonProperty("lastFailedReason")
+    public void setLastFailedReason(java.lang.String lastFailedReason) {
+        this.lastFailedReason = lastFailedReason;
     }
 
     @JsonProperty("lastFailedRevision")
@@ -158,6 +168,16 @@ public class NodeStatus implements KubernetesResource
     @JsonProperty("lastFailedTime")
     public void setLastFailedTime(String lastFailedTime) {
         this.lastFailedTime = lastFailedTime;
+    }
+
+    @JsonProperty("lastFallbackCount")
+    public Integer getLastFallbackCount() {
+        return lastFallbackCount;
+    }
+
+    @JsonProperty("lastFallbackCount")
+    public void setLastFallbackCount(Integer lastFallbackCount) {
+        this.lastFallbackCount = lastFallbackCount;
     }
 
     @JsonProperty("nodeName")

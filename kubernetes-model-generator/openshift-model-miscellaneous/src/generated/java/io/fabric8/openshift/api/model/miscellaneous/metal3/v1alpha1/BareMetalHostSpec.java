@@ -2,9 +2,10 @@
 package io.fabric8.openshift.api.model.miscellaneous.metal3.v1alpha1;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -41,6 +42,7 @@ import lombok.experimental.Accessors;
     "bootMACAddress",
     "bootMode",
     "consumerRef",
+    "customDeploy",
     "description",
     "externallyProvisioned",
     "firmware",
@@ -49,6 +51,7 @@ import lombok.experimental.Accessors;
     "metaData",
     "networkData",
     "online",
+    "preprovisioningNetworkDataName",
     "raid",
     "rootDeviceHints",
     "taints",
@@ -72,6 +75,7 @@ import lombok.experimental.Accessors;
     @BuildableReference(LocalObjectReference.class),
     @BuildableReference(PersistentVolumeClaim.class)
 })
+@Generated("jsonschema2pojo")
 public class BareMetalHostSpec implements KubernetesResource
 {
 
@@ -85,6 +89,8 @@ public class BareMetalHostSpec implements KubernetesResource
     private String bootMode;
     @JsonProperty("consumerRef")
     private io.fabric8.kubernetes.api.model.ObjectReference consumerRef;
+    @JsonProperty("customDeploy")
+    private CustomDeploy customDeploy;
     @JsonProperty("description")
     private String description;
     @JsonProperty("externallyProvisioned")
@@ -101,6 +107,8 @@ public class BareMetalHostSpec implements KubernetesResource
     private SecretReference networkData;
     @JsonProperty("online")
     private Boolean online;
+    @JsonProperty("preprovisioningNetworkDataName")
+    private String preprovisioningNetworkDataName;
     @JsonProperty("raid")
     private RAIDConfig raid;
     @JsonProperty("rootDeviceHints")
@@ -111,7 +119,7 @@ public class BareMetalHostSpec implements KubernetesResource
     @JsonProperty("userData")
     private SecretReference userData;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -120,33 +128,14 @@ public class BareMetalHostSpec implements KubernetesResource
     public BareMetalHostSpec() {
     }
 
-    /**
-     * 
-     * @param image
-     * @param bootMACAddress
-     * @param userData
-     * @param hardwareProfile
-     * @param automatedCleaningMode
-     * @param consumerRef
-     * @param description
-     * @param taints
-     * @param rootDeviceHints
-     * @param bootMode
-     * @param metaData
-     * @param networkData
-     * @param bmc
-     * @param online
-     * @param externallyProvisioned
-     * @param firmware
-     * @param raid
-     */
-    public BareMetalHostSpec(String automatedCleaningMode, BMCDetails bmc, String bootMACAddress, String bootMode, io.fabric8.kubernetes.api.model.ObjectReference consumerRef, String description, Boolean externallyProvisioned, FirmwareConfig firmware, String hardwareProfile, Image image, SecretReference metaData, SecretReference networkData, Boolean online, RAIDConfig raid, RootDeviceHints rootDeviceHints, List<Taint> taints, SecretReference userData) {
+    public BareMetalHostSpec(String automatedCleaningMode, BMCDetails bmc, String bootMACAddress, String bootMode, io.fabric8.kubernetes.api.model.ObjectReference consumerRef, CustomDeploy customDeploy, String description, Boolean externallyProvisioned, FirmwareConfig firmware, String hardwareProfile, Image image, SecretReference metaData, SecretReference networkData, Boolean online, String preprovisioningNetworkDataName, RAIDConfig raid, RootDeviceHints rootDeviceHints, List<Taint> taints, SecretReference userData) {
         super();
         this.automatedCleaningMode = automatedCleaningMode;
         this.bmc = bmc;
         this.bootMACAddress = bootMACAddress;
         this.bootMode = bootMode;
         this.consumerRef = consumerRef;
+        this.customDeploy = customDeploy;
         this.description = description;
         this.externallyProvisioned = externallyProvisioned;
         this.firmware = firmware;
@@ -155,6 +144,7 @@ public class BareMetalHostSpec implements KubernetesResource
         this.metaData = metaData;
         this.networkData = networkData;
         this.online = online;
+        this.preprovisioningNetworkDataName = preprovisioningNetworkDataName;
         this.raid = raid;
         this.rootDeviceHints = rootDeviceHints;
         this.taints = taints;
@@ -209,6 +199,16 @@ public class BareMetalHostSpec implements KubernetesResource
     @JsonProperty("consumerRef")
     public void setConsumerRef(io.fabric8.kubernetes.api.model.ObjectReference consumerRef) {
         this.consumerRef = consumerRef;
+    }
+
+    @JsonProperty("customDeploy")
+    public CustomDeploy getCustomDeploy() {
+        return customDeploy;
+    }
+
+    @JsonProperty("customDeploy")
+    public void setCustomDeploy(CustomDeploy customDeploy) {
+        this.customDeploy = customDeploy;
     }
 
     @JsonProperty("description")
@@ -289,6 +289,16 @@ public class BareMetalHostSpec implements KubernetesResource
     @JsonProperty("online")
     public void setOnline(Boolean online) {
         this.online = online;
+    }
+
+    @JsonProperty("preprovisioningNetworkDataName")
+    public String getPreprovisioningNetworkDataName() {
+        return preprovisioningNetworkDataName;
+    }
+
+    @JsonProperty("preprovisioningNetworkDataName")
+    public void setPreprovisioningNetworkDataName(String preprovisioningNetworkDataName) {
+        this.preprovisioningNetworkDataName = preprovisioningNetworkDataName;
     }
 
     @JsonProperty("raid")

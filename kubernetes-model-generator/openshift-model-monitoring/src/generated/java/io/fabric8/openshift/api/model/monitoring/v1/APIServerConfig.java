@@ -1,8 +1,9 @@
 
 package io.fabric8.openshift.api.model.monitoring.v1;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.annotation.Generated;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -33,6 +34,7 @@ import lombok.experimental.Accessors;
     "apiVersion",
     "kind",
     "metadata",
+    "authorization",
     "basicAuth",
     "bearerToken",
     "bearerTokenFile",
@@ -57,9 +59,12 @@ import lombok.experimental.Accessors;
     @BuildableReference(LocalObjectReference.class),
     @BuildableReference(PersistentVolumeClaim.class)
 })
+@Generated("jsonschema2pojo")
 public class APIServerConfig implements KubernetesResource
 {
 
+    @JsonProperty("authorization")
+    private Authorization authorization;
     @JsonProperty("basicAuth")
     private BasicAuth basicAuth;
     @JsonProperty("bearerToken")
@@ -71,7 +76,7 @@ public class APIServerConfig implements KubernetesResource
     @JsonProperty("tlsConfig")
     private TLSConfig tlsConfig;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
     /**
      * No args constructor for use in serialization
@@ -80,21 +85,24 @@ public class APIServerConfig implements KubernetesResource
     public APIServerConfig() {
     }
 
-    /**
-     * 
-     * @param bearerToken
-     * @param basicAuth
-     * @param host
-     * @param bearerTokenFile
-     * @param tlsConfig
-     */
-    public APIServerConfig(BasicAuth basicAuth, String bearerToken, String bearerTokenFile, String host, TLSConfig tlsConfig) {
+    public APIServerConfig(Authorization authorization, BasicAuth basicAuth, String bearerToken, String bearerTokenFile, String host, TLSConfig tlsConfig) {
         super();
+        this.authorization = authorization;
         this.basicAuth = basicAuth;
         this.bearerToken = bearerToken;
         this.bearerTokenFile = bearerTokenFile;
         this.host = host;
         this.tlsConfig = tlsConfig;
+    }
+
+    @JsonProperty("authorization")
+    public Authorization getAuthorization() {
+        return authorization;
+    }
+
+    @JsonProperty("authorization")
+    public void setAuthorization(Authorization authorization) {
+        this.authorization = authorization;
     }
 
     @JsonProperty("basicAuth")

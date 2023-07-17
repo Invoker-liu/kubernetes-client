@@ -15,18 +15,23 @@
  */
 package io.fabric8.volcano.client;
 
-import io.fabric8.kubernetes.client.*;
+import io.fabric8.kubernetes.client.Client;
+import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.RequestConfig;
+import io.fabric8.kubernetes.client.WithRequestCallable;
 import io.fabric8.kubernetes.client.dsl.FunctionCallable;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
+import io.fabric8.kubernetes.client.extension.ExtensionRootClientAdapter;
+import io.fabric8.kubernetes.client.extension.SupportTestingClient;
 import io.fabric8.volcano.client.dsl.V1beta1APIGroupDSL;
 import io.fabric8.volcano.scheduling.v1beta1.PodGroup;
 import io.fabric8.volcano.scheduling.v1beta1.PodGroupList;
 import io.fabric8.volcano.scheduling.v1beta1.Queue;
 import io.fabric8.volcano.scheduling.v1beta1.QueueList;
-import okhttp3.OkHttpClient;
 
-public class DefaultVolcanoClient extends BaseClient implements NamespacedVolcanoClient {
+public class DefaultVolcanoClient extends ExtensionRootClientAdapter<DefaultVolcanoClient>
+    implements NamespacedVolcanoClient, SupportTestingClient {
 
   public DefaultVolcanoClient() {
     super();
@@ -36,21 +41,13 @@ public class DefaultVolcanoClient extends BaseClient implements NamespacedVolcan
     super(configuration);
   }
 
-  public DefaultVolcanoClient(OkHttpClient httpClient, Config configuration) {
-    super(httpClient, configuration);
+  public DefaultVolcanoClient(Client client) {
+    super(client);
   }
 
   @Override
-  public NamespacedVolcanoClient inAnyNamespace() {
-    return inNamespace(null);
-  }
-
-  @Override
-  public NamespacedVolcanoClient inNamespace(String namespace) {
-    Config updated = new ConfigBuilder(getConfiguration())
-      .withNamespace(namespace)
-      .build();
-    return new DefaultVolcanoClient(getHttpClient(), updated);
+  protected DefaultVolcanoClient newInstance(Client client) {
+    return new DefaultVolcanoClient(client);
   }
 
   @Override
@@ -61,19 +58,23 @@ public class DefaultVolcanoClient extends BaseClient implements NamespacedVolcan
   @Override
   public MixedOperation<PodGroup, PodGroupList, Resource<PodGroup>> podGroups() {
     // By default, client.podGroups() use v1beta1 version,
-    return Handlers.getOperation(PodGroup.class, PodGroupList.class, this.getHttpClient(), this.getConfiguration());
+    return resources(PodGroup.class, PodGroupList.class);
   }
 
   @Override
   public MixedOperation<Queue, QueueList, Resource<Queue>> queues() {
     // By default, client.podGroups() use v1beta1 version,
-    return Handlers.getOperation(Queue.class, QueueList.class, this.getHttpClient(), this.getConfiguration());
+    return resources(Queue.class, QueueList.class);
   }
-
 
   @Override
   public V1beta1APIGroupDSL v1beta1() {
     // User can specify client.v1beta1().podGroups() to use v1beta1 API
     return adapt(V1beta1APIGroupClient.class);
+  }
+
+  @Override
+  public boolean isSupported() {
+    return getClient().hasApiGroup(VolcanoExtensionAdapter.API_GROUP, false);
   }
 }

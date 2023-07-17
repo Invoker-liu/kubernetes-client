@@ -16,31 +16,16 @@
 package io.fabric8.volumesnapshot.client;
 
 import io.fabric8.kubernetes.client.Client;
-import io.fabric8.kubernetes.client.ExtensionAdapter;
-import io.fabric8.kubernetes.client.ExtensionAdapterSupport;
-import io.fabric8.kubernetes.client.Handlers;
+import io.fabric8.kubernetes.client.extension.ExtensionAdapter;
 import io.fabric8.volumesnapshot.api.model.VolumeSnapshot;
 import io.fabric8.volumesnapshot.api.model.VolumeSnapshotClass;
 import io.fabric8.volumesnapshot.api.model.VolumeSnapshotContent;
 import io.fabric8.volumesnapshot.client.internal.VolumeSnapshotClassOperationsImpl;
 import io.fabric8.volumesnapshot.client.internal.VolumeSnapshotContentOperationsImpl;
 import io.fabric8.volumesnapshot.client.internal.VolumeSnapshotOperationsImpl;
-import okhttp3.OkHttpClient;
 
-import java.net.URL;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+public class VolumeSnapshotExtensionAdapter implements ExtensionAdapter<VolumeSnapshotClient> {
 
-public class VolumeSnapshotExtensionAdapter extends ExtensionAdapterSupport implements ExtensionAdapter<VolumeSnapshotClient> {
-
-  static {
-    Handlers.register(VolumeSnapshotClass.class, VolumeSnapshotClassOperationsImpl::new);
-    Handlers.register(VolumeSnapshotContent.class, VolumeSnapshotContentOperationsImpl::new);
-    Handlers.register(VolumeSnapshot.class, VolumeSnapshotOperationsImpl::new);
-  }
-
-  static final ConcurrentMap<URL, Boolean> IS_VOLUME_SNAPSHOT = new ConcurrentHashMap<>();
-  static final ConcurrentMap<URL, Boolean> USES_VOLUME_SNAPSHOT_APIGROUPS = new ConcurrentHashMap<>();
   public static final String API_GROUP = "snapshot.storage.k8s.io";
 
   @Override
@@ -49,13 +34,15 @@ public class VolumeSnapshotExtensionAdapter extends ExtensionAdapterSupport impl
   }
 
   @Override
-  public Boolean isAdaptable(Client client) {
-    return isAdaptable(client, IS_VOLUME_SNAPSHOT, USES_VOLUME_SNAPSHOT_APIGROUPS, API_GROUP);
+  public VolumeSnapshotClient adapt(Client client) {
+    return new DefaultVolumeSnapshotClient(client);
   }
 
   @Override
-  public VolumeSnapshotClient adapt(Client client) {
-    return new DefaultVolumeSnapshotClient(client.adapt(OkHttpClient.class), client.getConfiguration());
+  public void registerResources(ResourceFactory factory) {
+    factory.register(VolumeSnapshotClass.class, new VolumeSnapshotClassOperationsImpl());
+    factory.register(VolumeSnapshotContent.class, new VolumeSnapshotContentOperationsImpl());
+    factory.register(VolumeSnapshot.class, new VolumeSnapshotOperationsImpl());
   }
 
 }

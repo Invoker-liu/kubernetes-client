@@ -17,21 +17,39 @@ package io.fabric8.kubernetes.client.dsl.internal;
 
 import io.fabric8.kubernetes.api.model.metrics.v1beta1.NodeMetrics;
 import io.fabric8.kubernetes.api.model.metrics.v1beta1.NodeMetricsList;
-import io.fabric8.kubernetes.client.Config;
-import okhttp3.OkHttpClient;
+import io.fabric8.kubernetes.client.Client;
+import io.fabric8.kubernetes.client.dsl.NodeMetricOperation;
 
-public class NodeMetricOperationsImpl extends MetricOperationsImpl<NodeMetrics, NodeMetricsList> {
-	public NodeMetricOperationsImpl(OkHttpClient client, Config config) {
-		super(client, config, null, null, "nodes", null, NodeMetrics.class, NodeMetricsList.class);
-	}
+import java.util.Map;
 
-  /**
-   * Get NodeMetric with specified name
-   *
-   * @param nodeName name of the node
-   * @return NodeMetric fetched from ApiServer
-   */
+public class NodeMetricOperationsImpl extends MetricOperationsImpl<NodeMetrics, NodeMetricsList>
+    implements NodeMetricOperation {
+
+  public NodeMetricOperationsImpl(Client client) {
+    this(HasMetadataOperationsImpl.defaultContext(client));
+  }
+
+  public NodeMetricOperationsImpl(OperationContext context) {
+    super(context.withPlural("nodes"), NodeMetrics.class, NodeMetricsList.class);
+  }
+
+  @Override
   public NodeMetrics metrics(String nodeName) {
-	  return withName(nodeName).metric();
+    return withName(nodeName).metric();
+  }
+
+  @Override
+  public NodeMetricOperation withLabels(Map<String, String> labels) {
+    return new NodeMetricOperationsImpl(context.withLabels(labels));
+  }
+
+  @Override
+  public NodeMetricOperation withName(String name) {
+    return new NodeMetricOperationsImpl(context.withName(name));
+  }
+
+  @Override
+  public boolean isResourceNamespaced() {
+    return false; // workaround until the class metadata is fixed
   }
 }

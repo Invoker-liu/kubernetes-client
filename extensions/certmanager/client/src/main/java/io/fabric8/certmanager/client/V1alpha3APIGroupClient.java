@@ -19,52 +19,54 @@ import io.fabric8.certmanager.api.model.acme.v1alpha3.Challenge;
 import io.fabric8.certmanager.api.model.acme.v1alpha3.ChallengeList;
 import io.fabric8.certmanager.api.model.acme.v1alpha3.Order;
 import io.fabric8.certmanager.api.model.acme.v1alpha3.OrderList;
-import io.fabric8.certmanager.api.model.v1alpha3.*;
+import io.fabric8.certmanager.api.model.v1alpha3.Certificate;
+import io.fabric8.certmanager.api.model.v1alpha3.CertificateList;
+import io.fabric8.certmanager.api.model.v1alpha3.CertificateRequest;
+import io.fabric8.certmanager.api.model.v1alpha3.CertificateRequestList;
+import io.fabric8.certmanager.api.model.v1alpha3.ClusterIssuer;
+import io.fabric8.certmanager.api.model.v1alpha3.ClusterIssuerList;
+import io.fabric8.certmanager.api.model.v1alpha3.Issuer;
+import io.fabric8.certmanager.api.model.v1alpha3.IssuerList;
 import io.fabric8.certmanager.client.dsl.V1alpha3APIGroupDSL;
-import io.fabric8.kubernetes.client.BaseClient;
-import io.fabric8.kubernetes.client.Config;
-import io.fabric8.kubernetes.client.Handlers;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import okhttp3.OkHttpClient;
+import io.fabric8.kubernetes.client.extension.ClientAdapter;
 
-public class V1alpha3APIGroupClient extends BaseClient implements V1alpha3APIGroupDSL {
-  public V1alpha3APIGroupClient() {
-    super();
-  }
+public class V1alpha3APIGroupClient extends ClientAdapter<V1alpha3APIGroupClient> implements V1alpha3APIGroupDSL {
 
-  public V1alpha3APIGroupClient(OkHttpClient httpClient, final Config config) {
-    super(httpClient, config);
+  @Override
+  public V1alpha3APIGroupClient newInstance() {
+    return new V1alpha3APIGroupClient();
   }
 
   @Override
   public MixedOperation<Certificate, CertificateList, Resource<Certificate>> certificates() {
-    return Handlers.getOperation(Certificate.class, CertificateList.class, this.getHttpClient(),  this.getConfiguration());
+    return resources(Certificate.class, CertificateList.class);
   }
 
   @Override
   public MixedOperation<CertificateRequest, CertificateRequestList, Resource<CertificateRequest>> certificateRequests() {
-    return Handlers.getOperation(CertificateRequest.class, CertificateRequestList.class, this.getHttpClient(),  this.getConfiguration());
+    return resources(CertificateRequest.class, CertificateRequestList.class);
   }
 
   @Override
   public MixedOperation<Issuer, IssuerList, Resource<Issuer>> issuers() {
-    return Handlers.getOperation(Issuer.class, IssuerList.class, this.getHttpClient(),  this.getConfiguration());
+    return resources(Issuer.class, IssuerList.class);
   }
 
   @Override
   public NonNamespaceOperation<ClusterIssuer, ClusterIssuerList, Resource<ClusterIssuer>> clusterIssuers() {
-    return Handlers.getOperation(ClusterIssuer.class, ClusterIssuerList.class, this.getHttpClient(),  this.getConfiguration());
+    return resources(ClusterIssuer.class, ClusterIssuerList.class);
   }
 
   @Override
   public MixedOperation<Challenge, ChallengeList, Resource<Challenge>> challenges() {
-    return Handlers.getOperation(Challenge.class, ChallengeList.class, this.getHttpClient(),  this.getConfiguration());
+    return resources(Challenge.class, ChallengeList.class);
   }
 
   @Override
   public MixedOperation<Order, OrderList, Resource<Order>> orders() {
-    return Handlers.getOperation(Order.class, OrderList.class, this.getHttpClient(),  this.getConfiguration());
+    return resources(Order.class, OrderList.class);
   }
 }

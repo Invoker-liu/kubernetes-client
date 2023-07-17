@@ -15,31 +15,23 @@
  */
 package io.fabric8.openshift.client.dsl;
 
-import io.fabric8.openshift.client.DefaultOpenShiftClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import io.fabric8.kubernetes.client.NamespacedKubernetesClient;
 import io.fabric8.openshift.client.OpenShiftClient;
 import io.fabric8.openshift.client.OpenShiftConfigBuilder;
-import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AdaptTest {
 
   @Test
-  void testAdaptToHttpClient() {
-    // Given
-    OpenShiftClient client = new DefaultOpenShiftClient();
-
-    // When + Then
-    assertTrue(client.isAdaptable(OkHttpClient.class));
-    assertNotNull(client.adapt(OkHttpClient.class));
-  }
-
-  @Test
   void testAdaptDisabledCheck() {
     // Given
-    OpenShiftClient client = new DefaultOpenShiftClient(new OpenShiftConfigBuilder().withDisableApiGroupCheck(true).build());
+    OpenShiftClient client = new KubernetesClientBuilder()
+        .withConfig(new OpenShiftConfigBuilder().withDisableApiGroupCheck(true).build()).build().adapt(OpenShiftClient.class);
 
     // When + Then
     assertTrue(client.isAdaptable(OpenShiftClient.class));
@@ -48,8 +40,8 @@ class AdaptTest {
   @Test
   void testAdaptDSLs() {
     // Given
-    OpenShiftClient client = new DefaultOpenShiftClient(
-      new OpenShiftConfigBuilder().withDisableApiGroupCheck(true).build());
+    OpenShiftClient client = new KubernetesClientBuilder().withConfig(
+        new OpenShiftConfigBuilder().withDisableApiGroupCheck(true).build()).build().adapt(OpenShiftClient.class);
 
     assertNotNull(client.v1());
     assertNotNull(client.apps());
@@ -75,5 +67,15 @@ class AdaptTest {
     assertNotNull(client.storage());
     assertNotNull(client.templates());
     assertNotNull(client.users());
+  }
+
+  @Test
+  void testNamespacePreservation() {
+    // Given
+    NamespacedKubernetesClient client = new KubernetesClientBuilder().build().adapt(NamespacedKubernetesClient.class);
+    OpenShiftClient client1 = client.inNamespace("x").adapt(OpenShiftClient.class);
+
+    // When + Then
+    assertEquals("x", client1.getNamespace());
   }
 }

@@ -15,52 +15,25 @@
  */
 package io.fabric8.kubernetes.client.dsl.internal;
 
-import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.kubernetes.client.dsl.Nameable;
-import io.fabric8.kubernetes.client.dsl.base.OperationContext;
-import io.fabric8.kubernetes.client.dsl.base.OperationSupport;
+import io.fabric8.kubernetes.client.dsl.MetricOperation;
 import io.fabric8.kubernetes.client.utils.URLUtils;
-import okhttp3.HttpUrl;
-import okhttp3.OkHttpClient;
+import io.fabric8.kubernetes.client.utils.URLUtils.URLBuilder;
+import io.fabric8.kubernetes.client.utils.Utils;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
-public class MetricOperationsImpl<T, L> extends OperationSupport implements Nameable<MetricOperationsImpl<T, L>> {
+public abstract class MetricOperationsImpl<T, L> extends OperationSupport implements MetricOperation<T, L> {
   public static final String METRIC_ENDPOINT_URL = "apis/metrics.k8s.io/v1beta1/";
   private final Class<L> apiTypeListClass;
   private final Class<T> apiTypeClass;
-  private final String plural;
-  private final String configuredNamespace;
-  private final String configuredName;
-  private final Map<String, String> configuredLabels;
 
-  public MetricOperationsImpl(OkHttpClient client, Config config, String configuredName, String configuredNamespace, String plural, Map<String, String> configuredLabels, Class<T> apiTypeClass, Class<L> apiTypeListClass) {
-    super(new OperationContext().withOkhttpClient(client).withConfig(config));
-    this.plural = plural;
+  public MetricOperationsImpl(OperationContext operationContext, Class<T> apiTypeClass, Class<L> apiTypeListClass) {
+    super(operationContext);
     this.apiTypeClass = apiTypeClass;
     this.apiTypeListClass = apiTypeListClass;
-    this.configuredNamespace = configuredNamespace;
-    this.configuredName = configuredName;
-    this.configuredLabels = configuredLabels;
-  }
-
-  @Override
-  public MetricOperationsImpl<T, L> withName(String name) {
-    return new MetricOperationsImpl<>(client, config, name, configuredNamespace, plural, configuredLabels, apiTypeClass, apiTypeListClass);
-  }
-
-  /**
-   * Filter metrics via labels.
-   *
-   * @param labels labels as HashMap
-   * @return {@link MetricOperationsImpl} with which you can call metrics() for getting filtered Metrics
-   */
-  public MetricOperationsImpl<T, L> withLabels(Map<String, String> labels) {
-    return new MetricOperationsImpl<>(client, config, name, configuredNamespace, plural, labels, apiTypeClass, apiTypeListClass);
   }
 
   /**
@@ -68,10 +41,11 @@ public class MetricOperationsImpl<T, L> extends OperationSupport implements Name
    *
    * @return a list object for metrics
    */
+  @Override
   public L metrics() {
     try {
       return handleMetric(getMetricEndpointUrl(), apiTypeListClass);
-    } catch (IOException | ExecutionException exception) {
+    } catch (IOException exception) {
       throw KubernetesClientException.launderThrowable(exception);
     } catch (InterruptedException interruptedException) {
       Thread.currentThread().interrupt();
@@ -84,10 +58,11 @@ public class MetricOperationsImpl<T, L> extends OperationSupport implements Name
    *
    * @return a single metric
    */
+  @Override
   public T metric() {
     try {
       return handleMetric(getMetricEndpointUrl(), apiTypeClass);
-    } catch (IOException | ExecutionException exception) {
+    } catch (IOException exception) {
       throw KubernetesClientException.launderThrowable(exception);
     } catch (InterruptedException interruptedException) {
       Thread.currentThread().interrupt();
@@ -101,6 +76,7 @@ public class MetricOperationsImpl<T, L> extends OperationSupport implements Name
    * @param labelsMap labels as HashMap
    * @return list of metrics found matching provided label
    */
+  @Override
   public L metrics(Map<String, Object> labelsMap) {
     Map<String, String> labels = new HashMap<>();
     labelsMap.forEach((k, v) -> labels.put(k, v.toString()));
@@ -110,28 +86,28 @@ public class MetricOperationsImpl<T, L> extends OperationSupport implements Name
 
   protected String getMetricEndpointUrlWithPlural(String plural) {
     String result = URLUtils.join(config.getMasterUrl(), METRIC_ENDPOINT_URL);
-    if (configuredNamespace != null) {
-      result += "namespaces/" + configuredNamespace + "/";
+    if (isResourceNamespaced() && namespace != null) {
+      result += "namespaces/" + namespace + "/";
     }
     result += plural;
-    if (configuredName != null) {
-      result += "/" + configuredName;
+    if (context.getName() != null) {
+      result += "/" + context.getName();
     }
-    if (configuredLabels != null) {
-      result = getUrlWithLabels(result, configuredLabels);
+    if (Utils.isNotNullOrEmpty(context.getLabels())) {
+      result = getUrlWithLabels(result, context.getLabels());
     }
     return result;
   }
 
   private String getMetricEndpointUrl() {
-    return getMetricEndpointUrlWithPlural(plural);
+    return getMetricEndpointUrlWithPlural(context.getPlural());
   }
 
   private String getUrlWithLabels(String baseUrl, Map<String, String> labels) {
-    HttpUrl.Builder httpUrlBuilder = HttpUrl.get(baseUrl).newBuilder();
+    URLBuilder httpUrlBuilder = new URLBuilder(baseUrl);
 
     StringBuilder sb = new StringBuilder();
-    for(Map.Entry<String, String> entry : labels.entrySet()) {
+    for (Map.Entry<String, String> entry : labels.entrySet()) {
       sb.append(entry.getKey()).append("=").append(entry.getValue()).append(",");
     }
     httpUrlBuilder.addQueryParameter("labelSelector", sb.substring(0, sb.toString().length() - 1));
